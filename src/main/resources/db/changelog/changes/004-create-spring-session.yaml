@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-spring-session
+      author: carsupervision
+      comment: Tables de Spring Session JDBC (script PostgreSQL officiel fourni par Spring Session).
+      changes:
+        - sqlFile:
+            path: org/springframework/session/jdbc/schema-postgresql.sql
+            relativeToChangelogFile: false
+            splitStatements: true
+            endDelimiter: ;

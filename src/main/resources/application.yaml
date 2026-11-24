@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: carsupervision
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/carsupervision}
+    username: ${DATABASE_USERNAME:carsupervision}
+    password: ${DATABASE_PASSWORD:carsupervision}
+  jackson:
+    # Les champs facultatifs absents ne sont pas émis (le contrat ne déclare aucun champ nullable).
+    default-property-inclusion: non_null
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  session:
+    jdbc:
+      initialize-schema: never
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope: openid,email,profile
+
+server:
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: 30d
+      cookie:
+        http-only: true
+        secure: true
+        same-site: lax
+
+springdoc:
+  # Swagger UI affiche le contrat lui-même (principe I), pas une description déduite du code.
+  swagger-ui:
+    url: /openapi.yaml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+app:
+  # Email Google du premier administrateur (principe III de la constitution).
+  initial-admin-email: ${INITIAL_ADMIN_EMAIL:}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false

@@ -1,0 +1,10 @@
+app:
+  initial-admin-email: "  Said@Example.com "
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret

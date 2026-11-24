@@ -97,3 +97,19 @@ tasks.withType<JavaCompile> {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// --- Lancement local : `./gradlew bootRun` lit le fichier .env et active le profil dev ---
+// (Spring ne lit pas .env tout seul ; les tests et l'image Docker ne sont pas concernés.)
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    systemProperty("spring.profiles.active", "dev")
+    val envFile = file(".env")
+    if (envFile.exists()) {
+        envFile.readLines(Charsets.UTF_8)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains("=") }
+            .forEach { line ->
+                val (key, value) = line.split("=", limit = 2)
+                environment(key.trim(), value.trim())
+            }
+    }
+}

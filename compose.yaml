@@ -1,4 +1,6 @@
-# Infrastructure de développement : PostgreSQL uniquement (le backend et le frontend tournent en natif).
+# Développement : par défaut, PostgreSQL uniquement (le backend et le frontend tournent en natif).
+# Mode « tout-en-un » (démo, recette) : `docker compose --profile full up --build`
+# lance aussi l'application complète (frontend embarqué dans le backend) sur http://localhost:8080.
 services:
   postgres:
     image: postgres:17-alpine
@@ -15,6 +17,26 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  app:
+    profiles: [full]
+    build: .
+    image: carsupervision:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Dans le réseau Compose, la base est joignable sous le nom de son service.
+      DATABASE_URL: jdbc:postgresql://postgres:5432/carsupervision
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-carsupervision}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-carsupervision}
+      # Profil dev : cookie de session sans l'attribut Secure, car l'accès local se fait en http.
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "8080:8080"
 
 volumes:
   postgres-data:

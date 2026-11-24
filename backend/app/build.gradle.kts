@@ -28,13 +28,6 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName = "carsupervision.jar"
 }
 
-// Frontend : embarqué dans static/ quand il a été construit (Dockerfile, CI).
-tasks.named<ProcessResources>("processResources") {
-    from(rootProject.file("frontend/dist")) {
-        into("static")
-    }
-}
-
 // Lancement local : `./gradlew bootRun` lit le fichier .env à la racine et active le profil dev
 // (Spring ne lit pas .env tout seul ; les tests et l'image Docker ne sont pas concernés).
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {

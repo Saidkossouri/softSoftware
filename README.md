@@ -21,7 +21,8 @@ backend/
   security/       connexion Google, session, membre connecté
   vehicle/        parc de véhicules et attributions
   app/            point d'entrée Spring Boot, configuration, Liquibase, tests d'intégration
-frontend/         application React (Vite), embarquée dans le jar en production
+                  (backend/Dockerfile : image du backend)
+frontend/         application React (Vite), servie par nginx dans son image Docker
 buildSrc/         réglages de build communs à tous les modules
 gradle/libs.versions.toml   versions de toutes les dépendances
 ```
@@ -43,9 +44,8 @@ Docker sert à la base PostgreSQL et aux tests backend (Testcontainers).
 1. Dans [Google Cloud Console](https://console.cloud.google.com/), créer un projet.
 2. Configurer l'écran de consentement OAuth (audience « Externe ») et ajouter les comptes
    Google de test dans « Audience ».
-3. Dans « Clients », créer un client de type **Application Web** avec ces URI de redirection :
-   - `http://localhost:5173/login/oauth2/code/google` (mode développement)
-   - `http://localhost:8080/login/oauth2/code/google` (mode tout en Docker)
+3. Dans « Clients », créer un client de type **Application Web** avec cette URI de redirection autorisée :
+   - `http://localhost:5173/login/oauth2/code/google` (mode développement et mode Docker)
 4. Noter l'ID client et le code secret.
 
 ### 3. Configuration
@@ -64,7 +64,7 @@ PostgreSQL tourne dans Docker, le backend et le frontend en natif avec rechargem
 Dans trois terminaux, depuis la racine du projet :
 
 ```bash
-docker compose up -d                          # PostgreSQL sur :5432
+docker compose up -d postgres                 # PostgreSQL sur :5432
 ./gradlew bootRun                             # backend sur :8080 (Windows : .\gradlew.bat bootRun)
 cd frontend && npm install && npm run dev     # frontend sur :5173
 ```
@@ -77,14 +77,24 @@ migrations Liquibase.
 
 ### 4b. Mode tout en Docker (démo, recette)
 
-Aucune installation de Java ou Node nécessaire, seulement Docker et le fichier `.env` :
+Aucune installation de Java ou Node nécessaire, seulement Docker et le fichier `.env`.
+Chaque brique a sa propre image : `backend/Dockerfile` (jar Spring Boot) et
+`frontend/Dockerfile` (application construite, servie par nginx qui relaie `/api` et la
+connexion Google vers le backend).
 
-```bash
-docker compose --profile full up --build
-```
+| Commande | Effet |
+|---|---|
+| `docker compose up -d --build` | tout : base, backend sur :8080, frontend sur :5173 |
+| `docker compose up -d postgres` | base seule |
+| `docker compose up -d --build backend` | backend (démarre aussi la base dont il dépend) |
+| `docker compose up -d --build frontend` | frontend seul (répond 502 sur l'API tant que le backend n'est pas lancé) |
+| `docker compose logs -f backend` | journaux d'un service |
+| `docker compose stop frontend` | arrêter un service |
 
-Ouvrir **http://localhost:8080**. L'image contient le frontend et le backend, comme en
-production. Toute modification du code demande de reconstruire l'image (`--build`).
+Ouvrir **http://localhost:5173**. Le frontend en Docker utilise le même port que le serveur
+Vite, donc l'URI de redirection Google du mode développement suffit ; on ne peut pas lancer
+les deux en même temps. Toute modification du code demande de reconstruire l'image du
+service concerné (`--build`).
 
 ### 5. Lancer les tests
 
@@ -95,9 +105,8 @@ cd frontend && npm test -- --run     # frontend : tests de composants
 
 ### Arrêter
 
-`Ctrl+C` dans les terminaux du backend et du frontend, puis `docker compose down`
-(ajouter `--profile full` si le mode tout en Docker tourne). Les données de la base sont
-conservées dans un volume Docker ; `docker compose down -v` les efface.
+`Ctrl+C` dans les terminaux du backend et du frontend, puis `docker compose down`. Les données
+de la base sont conservées dans un volume Docker ; `docker compose down -v` les efface.
 
 ## Dépannage
 
@@ -105,8 +114,8 @@ conservées dans un volume Docker ; `docker compose down -v` les efface.
   `INITIAL_ADMIN_EMAIL` est vide dans `.env` alors que la base ne contient aucun ADMIN.
 - **Erreur `redirect_uri_mismatch` chez Google** : l'URI de redirection affichée n'est pas
   déclarée dans le client OAuth (voir étape 2).
-- **Port 5432 ou 8080 déjà utilisé** : arrêter l'autre PostgreSQL ou backend, ou le mode
-  tout en Docker si le mode développement tourne en même temps.
+- **Port 5432, 8080 ou 5173 déjà utilisé** : arrêter l'autre PostgreSQL, backend ou frontend, ou les
+  services Docker si le mode développement tourne en même temps (`docker compose stop backend frontend`).
 - **Tests backend en échec avec une erreur Docker** : Docker Desktop doit être démarré.
 
 ## Documentation

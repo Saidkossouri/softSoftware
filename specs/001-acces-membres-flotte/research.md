@@ -10,6 +10,14 @@ Aucun point « NEEDS CLARIFICATION » ne reste ouvert.
 
 ## R1. Organisation du dépôt et du livrable
 
+> **Révision du 2026-11-24 (décision du mainteneur)** : le dépôt est désormais un monolithe
+> multi-modules Gradle (`backend/<module>/`, voir [plan.md](./plan.md)) et chaque brique a sa
+> propre image : `backend/Dockerfile` (jar Spring Boot, API seule) et `frontend/Dockerfile`
+> (application construite servie par nginx, qui relaie `/api`, `/oauth2`, `/login`, `/logout`
+> vers le backend). L'origine reste unique côté navigateur (nginx en reverse proxy) : pas de
+> CORS, même cookie de session. Coût accepté : deux conteneurs à déployer au lieu d'un (sur
+> Cloud Run, deux services). La décision d'origine est conservée ci-dessous pour mémoire.
+
 **Décision** : projet Gradle (Kotlin DSL) à la racine du dépôt pour le backend
 (`src/main/java`, `src/main/resources/openapi/openapi.yaml`), application React dans
 `frontend/`. Un seul déployable : le build Docker compile le frontend puis l'embarque dans les

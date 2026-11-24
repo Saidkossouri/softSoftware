@@ -1,14 +1,7 @@
-# Image unique : frontend React embarqué dans le jar Spring Boot du module backend/app (research R1).
+# Image du backend : le jar Spring Boot du module backend/app (API, sécurité, Liquibase).
+# Contexte de build : racine du dépôt (docker build -f backend/Dockerfile .).
 
-FROM node:24-alpine AS frontend
-WORKDIR /app
-COPY backend/api-contract/src/main/resources/openapi/openapi.yaml backend/api-contract/src/main/resources/openapi/openapi.yaml
-COPY frontend/package.json frontend/package-lock.json frontend/
-RUN cd frontend && npm ci --no-audit --no-fund
-COPY frontend frontend
-RUN cd frontend && npm run build
-
-FROM eclipse-temurin:21-jdk-alpine AS backend
+FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
 # Fichiers de build d'abord, pour mettre en cache le téléchargement des dépendances.
 COPY gradlew settings.gradle.kts ./
@@ -22,13 +15,14 @@ COPY backend/vehicle/build.gradle.kts backend/vehicle/
 COPY backend/app/build.gradle.kts backend/app/
 RUN ./gradlew --no-daemon :backend:app:dependencies > /dev/null
 COPY backend backend
-COPY --from=frontend /app/frontend/dist frontend/dist
 RUN ./gradlew --no-daemon :backend:app:bootJar
 
 FROM eclipse-temurin:21-jre-alpine
 RUN addgroup -S app && adduser -S app -G app
 USER app
 WORKDIR /app
-COPY --from=backend /app/backend/app/build/libs/carsupervision.jar app.jar
+COPY --from=build /app/backend/app/build/libs/carsupervision.jar app.jar
 EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=3s --start-period=60s --retries=5 \
+  CMD wget -qO- http://localhost:8080/actuator/health > /dev/null || exit 1
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -4,6 +4,10 @@ import type { components, paths } from './generated/schema'
 export type Problem = components['schemas']['Problem']
 export type CurrentMember = components['schemas']['CurrentMember']
 export type Role = components['schemas']['Role']
+export type Member = components['schemas']['Member']
+export type MemberCreateRequest = components['schemas']['MemberCreateRequest']
+export type MemberUpdateRequest = components['schemas']['MemberUpdateRequest']
+export type FieldError = components['schemas']['FieldError']
 
 /** Erreur de l'API au format Problem Details, avec le code stable du contrat. */
 export class ApiError extends Error {

@@ -1,8 +1,9 @@
-import { Outlet } from 'react-router'
+import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '@/auth/AuthContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { fr } from '@/i18n/fr'
+import { cn } from '@/lib/utils'
 
 /** Mise en page mobile-first : en-tête avec le membre connecté (FR-014) et déconnexion (FR-008). */
 export function AppLayout() {
@@ -27,10 +28,35 @@ export function AppLayout() {
             </div>
           )}
         </div>
+        {member && (
+          <nav aria-label="Navigation principale" className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-4 pb-2">
+            <NavItem to="/" end>
+              {fr.nav.home}
+            </NavItem>
+            {member.role === 'ADMIN' && <NavItem to="/admin/membres">{fr.nav.members}</NavItem>}
+          </nav>
+        )}
       </header>
       <main className="mx-auto max-w-3xl px-4 py-6">
         <Outlet />
       </main>
     </div>
+  )
+}
+
+function NavItem({ to, end, children }: { to: string; end?: boolean; children: string }) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        cn(
+          'inline-flex h-10 shrink-0 items-center rounded-md px-3 text-sm font-medium hover:bg-secondary',
+          isActive ? 'bg-secondary text-foreground' : 'text-muted-foreground',
+        )
+      }
+    >
+      {children}
+    </NavLink>
   )
 }

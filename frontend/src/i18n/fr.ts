@@ -1,4 +1,4 @@
-import type { Role } from '@/api/client'
+import type { EnergyType, Role } from '@/api/client'
 
 /** Libellés de l'interface, en français uniquement (spec : hypothèses). */
 export const fr = {
@@ -17,6 +17,7 @@ export const fr = {
   nav: {
     home: 'Accueil',
     members: 'Membres',
+    fleet: 'Parc',
   },
   forbidden: {
     title: 'Accès refusé',
@@ -52,10 +53,58 @@ export const fr = {
     removing: 'Retrait…',
     you: 'vous',
   },
+  fleet: {
+    title: 'Parc de véhicules',
+    description: 'Les véhicules de la famille. Un véhicule archivé est conservé avec son historique.',
+    tabsLabel: 'Statut des véhicules',
+    activeTab: 'En service',
+    archivedTab: 'Archivés',
+    emptyActive: 'Aucun véhicule dans le parc pour le moment.',
+    emptyArchived: 'Aucun véhicule archivé.',
+    add: 'Ajouter un véhicule',
+    edit: 'Modifier',
+    reactivate: 'Réactiver',
+    reactivating: 'Réactivation…',
+    reactivated: (nickname: string) => `${nickname} est de nouveau en service.`,
+    archivedBadge: 'Archivé',
+    summary: (make: string, model: string, registration: string) => `${make} ${model} · ${registration}`,
+    back: 'Retour au parc',
+    createTitle: 'Nouveau véhicule',
+    createDescription: "L'immatriculation doit être unique, véhicules archivés compris.",
+    editTitle: 'Modifier le véhicule',
+    nickname: 'Surnom',
+    nicknamePlaceholder: 'La familiale',
+    make: 'Marque',
+    model: 'Modèle',
+    registration: 'Immatriculation',
+    registrationPlaceholder: 'AB-123-CD',
+    firstRegistrationYear: 'Année de première immatriculation (facultatif)',
+    initialMileageKm: 'Kilométrage de départ (km)',
+    vin: 'Numéro VIN (facultatif)',
+    vinHint: '17 caractères, sans les lettres I, O et Q.',
+    energyType: "Type d'énergie (facultatif)",
+    energyNone: 'Non renseigné',
+    create: 'Ajouter le véhicule',
+    creating: 'Ajout…',
+    save: 'Enregistrer',
+    saving: 'Enregistrement…',
+    saved: 'Modifications enregistrées.',
+    archive: 'Archiver le véhicule',
+    archiveConfirm: (nickname: string) =>
+      `Archiver ${nickname} ? Il disparaîtra du parc en service, mais restera consultable dans les archivés et pourra être réactivé.`,
+    archiveConfirmButton: "Confirmer l'archivage",
+    archiving: 'Archivage…',
+    cancel: 'Annuler',
+    archivedNotice: 'Ce véhicule est archivé.',
+  },
   validation: {
     required: 'Ce champ est obligatoire.',
     email: 'Saisissez une adresse email valide.',
     maxLength: (max: number) => `${max} caractères maximum.`,
+    registration: 'Saisissez une immatriculation de 2 à 20 lettres ou chiffres (espaces et tirets acceptés).',
+    year: (max: number) => `L'année doit être comprise entre 1900 et ${max}.`,
+    mileage: 'Le kilométrage doit être un nombre entier entre 0 et 2 000 000 km.',
+    vin: 'Le VIN compte 17 lettres ou chiffres, sans les lettres I, O et Q.',
   },
   revoked: {
     title: 'Accès refusé',
@@ -79,5 +128,5 @@ export const fr = {
     ELECTRIC: 'Électrique',
     LPG: 'GPL',
     OTHER: 'Autre',
-  },
+  } satisfies Record<EnergyType, string>,
 } as const

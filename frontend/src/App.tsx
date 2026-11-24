@@ -8,6 +8,8 @@ import { AppLayout } from '@/components/AppLayout'
 import { HomePage } from '@/pages/HomePage'
 import { MemberEditPage } from '@/pages/admin/MemberEditPage'
 import { MembersPage } from '@/pages/admin/MembersPage'
+import { FleetPage } from '@/pages/admin/FleetPage'
+import { VehicleFormPage } from '@/pages/admin/VehicleFormPage'
 
 export function App() {
   const [queryClient] = useState(() => new QueryClient())
@@ -22,6 +24,9 @@ export function App() {
                 <Route path="admin" element={<RequireAdmin />}>
                   <Route path="membres" element={<MembersPage />} />
                   <Route path="membres/:memberId" element={<MemberEditPage />} />
+                  <Route path="parc" element={<FleetPage />} />
+                  <Route path="parc/nouveau" element={<VehicleFormPage />} />
+                  <Route path="parc/:vehicleId" element={<VehicleFormPage />} />
                 </Route>
                 <Route path="*" element={<HomePage />} />
               </Route>

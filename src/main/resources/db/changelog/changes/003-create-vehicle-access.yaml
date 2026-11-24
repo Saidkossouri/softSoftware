@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-vehicle-access
+      author: carsupervision
+      changes:
+        - createTable:
+            tableName: vehicle_access
+            columns:
+              - column:
+                  name: member_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_vehicle_access_member
+                    references: member(id)
+                    deleteCascade: true
+              - column:
+                  name: vehicle_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_vehicle_access_vehicle
+                    references: vehicle(id)
+              - column:
+                  name: granted_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: vehicle_access
+            columnNames: member_id, vehicle_id
+            constraintName: pk_vehicle_access

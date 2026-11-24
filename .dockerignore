@@ -1,0 +1,10 @@
+.git
+.gradle
+build
+frontend/node_modules
+frontend/dist
+frontend/src/api/generated
+.env
+specs
+.specify
+.claude

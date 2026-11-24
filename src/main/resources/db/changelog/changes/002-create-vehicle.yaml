@@ -1,0 +1,84 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-vehicle
+      author: carsupervision
+      changes:
+        - createTable:
+            tableName: vehicle
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_vehicle
+              - column:
+                  name: nickname
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: make
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: model
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: registration
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: registration_key
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_vehicle_registration_key
+              - column:
+                  name: first_registration_year
+                  type: smallint
+              - column:
+                  name: initial_mileage_km
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: vin
+                  type: varchar(17)
+              - column:
+                  name: energy_type
+                  type: varchar(12)
+              - column:
+                  name: status
+                  type: varchar(10)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >-
+              ALTER TABLE vehicle
+                ADD CONSTRAINT ck_vehicle_year CHECK (first_registration_year >= 1900),
+                ADD CONSTRAINT ck_vehicle_mileage CHECK (initial_mileage_km >= 0),
+                ADD CONSTRAINT ck_vehicle_energy CHECK (energy_type IN ('PETROL', 'DIESEL', 'HYBRID', 'ELECTRIC', 'LPG', 'OTHER')),
+                ADD CONSTRAINT ck_vehicle_status CHECK (status IN ('ACTIVE', 'ARCHIVED'))
+        - createIndex:
+            tableName: vehicle
+            indexName: ix_vehicle_status
+            columns:
+              - column:
+                  name: status

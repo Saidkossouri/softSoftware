@@ -1,2 +1,19 @@
 # Fichiers locaux de Claude Code (peuvent contenir des données personnelles)
 .claude/settings.local.json
+
+# Build Gradle et code généré depuis le contrat OpenAPI (jamais commité, principe I)
+build/
+.gradle/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/src/api/generated/
+
+# Secrets locaux
+.env
+
+# IDE
+.idea/
+.vscode/
+*.iml

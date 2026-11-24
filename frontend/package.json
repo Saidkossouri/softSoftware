@@ -7,7 +7,7 @@
     "node": ">=22.22.0"
   },
   "scripts": {
-    "generate:api": "openapi-typescript ../src/main/resources/openapi/openapi.yaml -o src/api/generated/schema.d.ts",
+    "generate:api": "openapi-typescript ../backend/api-contract/src/main/resources/openapi/openapi.yaml -o src/api/generated/schema.d.ts",
     "predev": "npm run generate:api",
     "dev": "vite",
     "prebuild": "npm run generate:api",

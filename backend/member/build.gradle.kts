@@ -6,4 +6,6 @@ plugins {
 dependencies {
     api(project(":backend:common"))
     api(libs.spring.boot.starter.data.jpa)
+    // @PreAuthorize sur les opérations d'administration des membres (principe IV).
+    implementation(libs.spring.security.core)
 }

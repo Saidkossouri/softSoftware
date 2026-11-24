@@ -8,6 +8,10 @@ export type Member = components['schemas']['Member']
 export type MemberCreateRequest = components['schemas']['MemberCreateRequest']
 export type MemberUpdateRequest = components['schemas']['MemberUpdateRequest']
 export type FieldError = components['schemas']['FieldError']
+export type Vehicle = components['schemas']['Vehicle']
+export type VehicleInput = components['schemas']['VehicleInput']
+export type VehicleStatus = components['schemas']['VehicleStatus']
+export type EnergyType = components['schemas']['EnergyType']
 
 /** Erreur de l'API au format Problem Details, avec le code stable du contrat. */
 export class ApiError extends Error {

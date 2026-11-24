@@ -67,7 +67,7 @@ Sous Windows, remplacer `./gradlew` par `.\gradlew.bat`.
 - `backend/common/` : erreurs Problem Details, normalisation, horloge, configuration web.
 - `backend/member/` : membres, rôles, liste blanche, administrateur initial.
 - `backend/security/` : connexion Google, session, membre connecté (`CurrentMember`), `/api/me`.
-- `backend/vehicle/` : parc de véhicules et attributions (pour l'instant les migrations).
+- `backend/vehicle/` : parc de véhicules (`VehicleService`, `/api/vehicles`) ; attributions à venir (histoire 4).
 - `backend/app/` : point d'entrée, `application.yaml`, changelog maître ; ses tests
   (`src/test/java/`) sont les tests d'intégration `*IT` de l'application assemblée. Les tests
   unitaires `*Test` restent dans leur module.

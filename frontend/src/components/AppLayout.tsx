@@ -33,7 +33,12 @@ export function AppLayout() {
             <NavItem to="/" end>
               {fr.nav.home}
             </NavItem>
-            {member.role === 'ADMIN' && <NavItem to="/admin/membres">{fr.nav.members}</NavItem>}
+            {member.role === 'ADMIN' && (
+              <>
+                <NavItem to="/admin/parc">{fr.nav.fleet}</NavItem>
+                <NavItem to="/admin/membres">{fr.nav.members}</NavItem>
+              </>
+            )}
           </nav>
         )}
       </header>

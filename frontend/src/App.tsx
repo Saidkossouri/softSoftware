@@ -2,9 +2,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from '@/auth/AuthContext'
+import { RequireAdmin } from '@/auth/RequireAdmin'
 import { RequireAuth } from '@/auth/RequireAuth'
 import { AppLayout } from '@/components/AppLayout'
 import { HomePage } from '@/pages/HomePage'
+import { MemberEditPage } from '@/pages/admin/MemberEditPage'
+import { MembersPage } from '@/pages/admin/MembersPage'
 
 export function App() {
   const [queryClient] = useState(() => new QueryClient())
@@ -16,6 +19,10 @@ export function App() {
             <Routes>
               <Route element={<AppLayout />}>
                 <Route index element={<HomePage />} />
+                <Route path="admin" element={<RequireAdmin />}>
+                  <Route path="membres" element={<MembersPage />} />
+                  <Route path="membres/:memberId" element={<MemberEditPage />} />
+                </Route>
                 <Route path="*" element={<HomePage />} />
               </Route>
             </Routes>

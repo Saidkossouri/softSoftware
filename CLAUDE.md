@@ -46,18 +46,19 @@ Sous Windows, remplacer `./gradlew` par `.\gradlew.bat`.
 
 | Action | Commande |
 |---|---|
-| Base PostgreSQL | `docker compose up -d` |
+| Base PostgreSQL | `docker compose up -d postgres` |
 | Backend (:8080, lit `.env`, profil dev) | `./gradlew bootRun` |
 | Frontend (:5173, proxy vers :8080) | `cd frontend && npm install && npm run dev` |
-| Tout en Docker (:8080) | `docker compose --profile full up --build` |
+| Tout en Docker (frontend :5173, backend :8080) | `docker compose up -d --build` (ou un service : `postgres`, `backend`, `frontend`) |
 | Tests backend | `./gradlew test` |
 | Tests frontend | `cd frontend && npm test -- --run` |
 | Lint frontend | `cd frontend && npm run lint` |
 
 - Configuration dans `.env` (copie de `.env.example`, jamais commité) : `INITIAL_ADMIN_EMAIL`,
   `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, accès base.
-- La connexion Google en dev passe par `http://localhost:5173/login/oauth2/code/google`
-  (et `http://localhost:8080/...` pour le mode tout en Docker).
+- La connexion Google passe par `http://localhost:5173/login/oauth2/code/google`, en natif
+  (Vite) comme en Docker (nginx du frontend, qui relaie `/api`, `/oauth2`, `/login` vers le backend).
+- Images Docker : `backend/Dockerfile` et `frontend/Dockerfile`, contexte de build = racine.
 - Le premier build Gradle et les premiers tests Testcontainers sont lents (téléchargements).
 
 ## Repères dans le code

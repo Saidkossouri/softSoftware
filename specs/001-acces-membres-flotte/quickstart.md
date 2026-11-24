@@ -31,7 +31,7 @@ Copier `.env.example` en `.env` (fichier ignoré par git) et renseigner :
 ## 2. Lancer l'application en développement
 
 ```bash
-docker compose up -d            # PostgreSQL
+docker compose up -d postgres   # PostgreSQL
 ./gradlew bootRun               # backend sur :8080 (génère le code OpenAPI, applique Liquibase)
 cd frontend && npm install && npm run dev   # frontend sur :5173
 ```
@@ -71,13 +71,14 @@ Chaque scénario reprend un critère d'acceptation de la [spec](./spec.md).
 | 15 | Se déconnecter | Retour à l'écran de connexion ; les pages protégées redemandent la connexion | US1-3 |
 | 16 | Ouvrir Swagger UI (`/swagger-ui/index.html`) connecté | Documentation générée depuis `openapi.yaml` | Principe I |
 
-## 5. Image Docker
+## 5. Images Docker
+
+Chaque brique a sa propre image ; Compose les lance ensemble ou séparément :
 
 ```bash
-docker build -t carsupervision .
-docker run --env-file .env -p 8080:8080 carsupervision
+docker compose up -d --build            # base, backend (:8080) et frontend (:5173)
+docker compose up -d --build backend    # backend seul (avec sa base)
+docker compose up -d --build frontend   # frontend seul (nginx, relaie /api vers le backend)
 ```
 
-L'image contient le frontend et le backend ; `http://localhost:8080` sert l'application
-(pour se connecter en local via l'image, ajouter `http://localhost:8080/login/oauth2/code/google`
-aux URI de redirection du client OAuth).
+Ouvrir `http://localhost:5173` : l'URI de redirection Google du développement suffit.

@@ -1,6 +1,9 @@
-# Développement : par défaut, PostgreSQL uniquement (le backend et le frontend tournent en natif).
-# Mode « tout-en-un » (démo, recette) : `docker compose --profile full up --build`
-# lance aussi l'application complète (frontend embarqué dans le backend) sur http://localhost:8080.
+# Trois services, lançables ensemble ou séparément :
+#   docker compose up -d --build            tout : base, backend (:8080), frontend (:5173)
+#   docker compose up -d postgres           base seule (mode développement : backend et frontend en natif)
+#   docker compose up -d --build backend    backend (démarre aussi la base dont il dépend)
+#   docker compose up -d --build frontend   frontend seul ; il relaie /api vers le service backend
+# Les variables viennent du fichier .env à la racine.
 services:
   postgres:
     image: postgres:17-alpine
@@ -18,10 +21,11 @@ services:
       timeout: 3s
       retries: 10
 
-  app:
-    profiles: [full]
-    build: .
-    image: carsupervision:local
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: carsupervision-backend:local
     depends_on:
       postgres:
         condition: service_healthy
@@ -37,6 +41,18 @@ services:
       SPRING_PROFILES_ACTIVE: dev
     ports:
       - "8080:8080"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: carsupervision-frontend:local
+    environment:
+      BACKEND_URL: http://backend:8080
+    # Même port que le serveur Vite : l'URI de retour Google déjà déclarée
+    # (http://localhost:5173/login/oauth2/code/google) fonctionne sans changement.
+    ports:
+      - "5173:80"
 
 volumes:
   postgres-data:

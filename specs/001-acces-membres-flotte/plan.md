@@ -38,7 +38,7 @@ Liquibase. Pas de stockage de fichiers dans cette fonctionnalité.
 Testcontainers PostgreSQL, `swagger-request-validator-mockmvc` pour la conformité au contrat ;
 Vitest + Testing Library côté frontend.
 
-**Target Platform**: conteneur Linux (image Docker unique) sur petit VPS (Docker Compose) ou
+**Target Platform**: conteneurs Linux (une image backend, une image frontend nginx) sur petit VPS (Docker Compose) ou
 GCP Cloud Run ; navigateurs mobiles et desktop récents.
 
 **Project Type**: application web (API REST + SPA servie par le même déployable).
@@ -103,8 +103,8 @@ settings.gradle.kts                  # liste des modules (sous-projets Gradle)
 gradle/libs.versions.toml            # versions de toutes les dépendances
 buildSrc/                            # convention commune des modules (Java 21, BOM Spring Boot, MapStruct, JUnit)
 gradlew, gradle/wrapper/
-compose.yaml                         # PostgreSQL pour le développement ; profil « full » : toute l'app
-Dockerfile                           # build frontend + build Gradle + image JRE 21
+compose.yaml                         # services postgres, backend, frontend, lançables séparément
+backend/Dockerfile, frontend/Dockerfile   # une image par brique (JRE 21 ; nginx qui relaie /api)
 .env.example
 .github/workflows/ci.yml
 

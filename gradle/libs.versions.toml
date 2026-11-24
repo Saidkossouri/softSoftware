@@ -1,0 +1,39 @@
+# Versions centralisées de toutes les dépendances du backend.
+[versions]
+spring-boot = "3.5.16"
+spring-dependency-management = "1.1.7"
+openapi-generator = "7.14.0"
+mapstruct = "1.6.3"
+springdoc = "2.8.17"
+swagger-request-validator = "2.46.1"
+
+[libraries]
+# Plugins Gradle utilisés par les conventions de buildSrc
+spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
+spring-dependency-management-plugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "spring-dependency-management" }
+openapi-generator-gradle-plugin = { module = "org.openapitools:openapi-generator-gradle-plugin", version.ref = "openapi-generator" }
+
+# Versions gérées par le BOM Spring Boot
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-boot-starter-oauth2-client = { module = "org.springframework.boot:spring-boot-starter-oauth2-client" }
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+spring-session-jdbc = { module = "org.springframework.session:spring-session-jdbc" }
+spring-security-test = { module = "org.springframework.security:spring-security-test" }
+liquibase-core = { module = "org.liquibase:liquibase-core" }
+postgresql = { module = "org.postgresql:postgresql" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql" }
+spring-tx = { module = "org.springframework:spring-tx" }
+spring-security-core = { module = "org.springframework.security:spring-security-core" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+# Versions explicites
+springdoc-openapi-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
+mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
+swagger-request-validator-mockmvc = { module = "com.atlassian.oai:swagger-request-validator-mockmvc", version.ref = "swagger-request-validator" }

@@ -59,7 +59,7 @@ membre avec attributions).
 
 | Principe | Exigence | Comment le plan la respecte | Statut |
 |---|---|---|---|
-| I. Contract-First | Contrat `openapi.yaml` d'abord, interfaces et DTOs générés au build, jamais commités, frontend sur types générés, Swagger UI | Contrat rédigé dans [contracts/openapi.yaml](./contracts/openapi.yaml), copié en `src/main/resources/openapi/openapi.yaml` en première tâche ; `openApiGenerate` vers `build/generated/openapi` ; contrôleurs implémentant les `*Api` générés ; `openapi-typescript` + `openapi-fetch` côté frontend ; Swagger UI servi depuis le fichier. Les points d'entrée OAuth2 et `/logout` de Spring Security ne sont pas des contrôleurs REST et sont documentés dans la description du contrat (voir ci-dessous). | ✅ |
+| I. Contract-First | Contrat `openapi.yaml` d'abord, interfaces et DTOs générés au build, jamais commités, frontend sur types générés, Swagger UI | Contrat rédigé dans [contracts/openapi.yaml](./contracts/openapi.yaml), copié en `backend/api-contract/src/main/resources/openapi/openapi.yaml` en première tâche ; `openApiGenerate` vers `backend/api-contract/build/generated/openapi` ; contrôleurs implémentant les `*Api` générés ; `openapi-typescript` + `openapi-fetch` côté frontend ; Swagger UI servi depuis le fichier. Les points d'entrée OAuth2 et `/logout` de Spring Security ne sont pas des contrôleurs REST et sont documentés dans la description du contrat (voir ci-dessous). | ✅ |
 | II. Monolithe modulaire en couches | Un déployable, modules métier, Controller / Service / Repository / Mapper, pas d'entité exposée | Un seul jar/image ; modules `administration`, `vehicle`, `security`, `common` ; mappers MapStruct entité ↔ DTO ; logique dans les services. | ✅ |
 | III. Auth déléguée à Google | OAuth2/OIDC via Spring Security, liste blanche en base, 403 pour les autres, `INITIAL_ADMIN_EMAIL`, secrets en variables d'environnement | `oauth2Login()` + `OidcUserService` qui vérifie la liste blanche et `email_verified` ; 403 avec page dédiée ; `InitialAdminInitializer` ; `.env` ignoré. | ✅ |
 | IV. RBAC | Deux rôles, `@PreAuthorize("hasRole('ADMIN')")` sur l'administration, USER limité à ses véhicules | Rôle relu en base à chaque requête ; `@PreAuthorize` sur toutes les opérations ADMIN ; `VehicleAccessGuard` dans la couche service. | ✅ |
@@ -99,52 +99,49 @@ specs/001-acces-membres-flotte/
 ### Source Code (repository root)
 
 ```text
-build.gradle.kts                     # Spring Boot, openApiGenerate, Liquibase, tests
-settings.gradle.kts
+settings.gradle.kts                  # liste des modules (sous-projets Gradle)
+gradle/libs.versions.toml            # versions de toutes les dépendances
+buildSrc/                            # convention commune des modules (Java 21, BOM Spring Boot, MapStruct, JUnit)
 gradlew, gradle/wrapper/
-compose.yaml                         # PostgreSQL pour le développement
+compose.yaml                         # PostgreSQL pour le développement ; profil « full » : toute l'app
 Dockerfile                           # build frontend + build Gradle + image JRE 21
 .env.example
 .github/workflows/ci.yml
 
-src/main/java/fr/carsupervision/
-├── CarSupervisionApplication.java
-├── common/
+backend/
+├── api-contract/                    # contrat et code généré
+│   ├── src/main/resources/openapi/openapi.yaml   # contrat (source unique)
+│   └── build/generated/openapi/     # interfaces *Api et DTOs, générés, jamais commités
+├── common/                          # fr.carsupervision.common
 │   ├── error/                       # ApiException, codes, @RestControllerAdvice (Problem Details)
-│   └── web/                         # configuration SPA (repli vers index.html)
-├── security/
-│   ├── SecurityConfig.java          # oauth2Login, CSRF, 401 JSON, règles d'accès
-│   ├── WhitelistOidcUserService.java
-│   ├── AccessDeniedLoginHandler.java
-│   ├── CurrentMemberFilter.java     # relit le membre et son rôle à chaque requête
-│   ├── MemberAuthentication.java
-│   └── CurrentMember.java           # accès au membre courant depuis les services
-├── administration/
-│   ├── member/                      # Member, MemberRepository, MemberService, MemberMapper, MembersController
-│   ├── access/                      # VehicleAccessService, VehicleAccessController
-│   └── InitialAdminInitializer.java
-└── vehicle/
-    ├── Vehicle.java, VehicleStatus.java, EnergyType.java
-    ├── VehicleRepository.java
-    ├── VehicleAccess.java, VehicleAccessRepository.java
-    ├── VehicleAccessGuard.java      # règle de lecture ADMIN / USER réutilisable
-    ├── VehicleService.java
-    ├── VehicleMapper.java
-    └── VehiclesController.java
-
-src/main/resources/
-├── openapi/openapi.yaml             # contrat (source unique)
-├── db/changelog/                    # db.changelog-master.yaml + changesets 001 à 004
-├── static/access-denied.html        # page 403 de connexion refusée
-└── application.yaml                 # profils dev / prod, variables d'environnement
-
-src/test/java/fr/carsupervision/
-├── support/                         # base Testcontainers, validateur de contrat, fabriques de membres
-├── security/                        # liste blanche, email non vérifié, 401, retrait immédiat, démarrage
-├── administration/                  # membres, dernier ADMIN (dont concurrence), attributions
-└── vehicle/                         # CRUD, doublons, archivage, accès USER
-
-build/generated/openapi/             # généré, jamais commité
+│   ├── time/                        # horloge partagée
+│   └── web/                         # préfixe /api, contrat servi, repli SPA vers index.html
+├── member/                          # fr.carsupervision.member
+│   ├── Member, Role, MemberRepository, MemberMapper
+│   ├── InitialAdminInitializer      # ADMIN initial depuis INITIAL_ADMIN_EMAIL
+│   ├── MemberService, MembersController   # US2 : gestion des membres, dernier ADMIN
+│   └── changeset 001-create-member
+├── security/                        # fr.carsupervision.security
+│   ├── SecurityConfig               # oauth2Login, CSRF, 401 JSON, règles d'accès
+│   ├── WhitelistOidcUserService, AccessDeniedLoginHandler, MemberLoginService
+│   ├── CurrentMemberFilter          # relit le membre et son rôle à chaque requête
+│   ├── CurrentMember, AuthenticatedMember, CurrentMemberMapper, SessionController (/api/me)
+│   └── static/access-denied.html, changeset 004-create-spring-session
+├── vehicle/                         # fr.carsupervision.vehicle (US3, US4)
+│   ├── Vehicle, VehicleStatus, EnergyType, VehicleRepository, VehicleService, VehicleMapper
+│   ├── VehiclesController
+│   ├── VehicleAccess, VehicleAccessRepository, VehicleAccessService, VehicleAccessController
+│   ├── VehicleAccessGuard           # règle de lecture ADMIN / USER réutilisable
+│   └── changesets 002-create-vehicle, 003-create-vehicle-access
+└── app/                             # le déployable unique
+    ├── CarSupervisionApplication    # point d'entrée, assemble tous les modules
+    ├── application.yaml             # profils dev / prod, variables d'environnement
+    ├── db/changelog/db.changelog-master.yaml   # inclut les changesets des modules
+    └── src/test/                    # tests d'intégration (Testcontainers) sur l'application assemblée
+        ├── support/                 # base Testcontainers, validateur de contrat, fabriques de membres
+        ├── security/                # liste blanche, email non vérifié, 401, retrait immédiat
+        ├── member/                  # ADMIN initial, membres, dernier ADMIN (dont concurrence)
+        └── vehicle/                 # CRUD, doublons, archivage, attributions, accès USER
 
 frontend/
 ├── package.json, vite.config.ts, tsconfig.json, index.html
@@ -162,11 +159,23 @@ frontend/
 └── tests/
 ```
 
-**Structure Decision** : projet Gradle à la racine (imposé par le chemin du contrat dans la
-constitution) et frontend dans `frontend/`. Le backend est découpé en packages par module
-métier, conformément au principe II ; les modules futurs (kilométrages, entretiens,
-échéances, justificatifs) s'ajouteront comme packages frères de `vehicle` et réutiliseront
-`VehicleAccessGuard`.
+**Structure Decision** : monolithe modulaire **multi-modules Gradle** (décision du mainteneur
+du 2026-11-24), conforme au principe II : un seul déployable (`backend/app`) et un
+sous-projet Gradle par module, frontend dans `frontend/`. Les dépendances entre modules sont
+déclarées explicitement et vont dans un seul sens :
+
+```text
+app ──> vehicle ──> security ──> member ──> common ──> api-contract
+```
+
+`vehicle` dépend de `security` pour le membre connecté (accès d'un USER à ses véhicules) ;
+`member` ne dépend pas de `security`, ce qui évite un cycle. Chaque module porte ses entités,
+services, contrôleurs et changesets Liquibase ; les changesets gardent le chemin
+`db/changelog/changes/…`, donc l'historique Liquibase des bases existantes reste valide, et le
+changelog maître est dans `app`. Les tests d'intégration vivent dans `app`, qui assemble
+l'application ; les tests unitaires restent dans leur module. Les modules futurs (kilométrages,
+entretiens, échéances, justificatifs) seront de nouveaux sous-projets `backend/<module>` qui
+dépendront de `vehicle` et réutiliseront `VehicleAccessGuard`.
 
 ## Découpage de livraison suggéré
 

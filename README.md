@@ -7,6 +7,25 @@ Google, accès réservé aux membres ajoutés par un administrateur.
 Stack : Java 21 / Spring Boot 3, PostgreSQL, React + TypeScript (Vite, Tailwind, shadcn/ui),
 contrat d'API OpenAPI.
 
+## Structure du projet
+
+Monolithe modulaire : un seul déployable, mais un sous-projet Gradle par module, avec des
+dépendances déclarées dans un seul sens
+(`app → vehicle → security → member → common → api-contract`).
+
+```text
+backend/
+  api-contract/   contrat OpenAPI (openapi.yaml), interfaces et DTOs générés au build
+  common/         erreurs Problem Details, normalisation, horloge, configuration web
+  member/         membres, rôles, liste blanche, administrateur initial
+  security/       connexion Google, session, membre connecté
+  vehicle/        parc de véhicules et attributions
+  app/            point d'entrée Spring Boot, configuration, Liquibase, tests d'intégration
+frontend/         application React (Vite), embarquée dans le jar en production
+buildSrc/         réglages de build communs à tous les modules
+gradle/libs.versions.toml   versions de toutes les dépendances
+```
+
 ## Lancer le projet en local
 
 ### 1. Prérequis
@@ -94,6 +113,6 @@ conservées dans un volume Docker ; `docker compose down -v` les efface.
 
 - Constitution du projet : `.specify/memory/constitution.md`
 - Spécifications par fonctionnalité : `specs/` (spec, plan, contrat, quickstart de validation)
-- Contrat d'API : `src/main/resources/openapi/openapi.yaml`, servi par Swagger UI sur
+- Contrat d'API : `backend/api-contract/src/main/resources/openapi/openapi.yaml`, servi par Swagger UI sur
   `/swagger-ui/index.html` une fois connecté
 - Guide de travail pour Claude : `CLAUDE.md`

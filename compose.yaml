@@ -20,6 +20,9 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+      # Au démarrage, vérification chaque seconde : le backend, qui attend la base, part plus tôt.
+      start_period: 20s
+      start_interval: 1s
 
   backend:
     build:

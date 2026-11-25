@@ -5,7 +5,7 @@
 Tables PostgreSQL créées par des changesets Liquibase **nouveaux**, chacun dans son module et
 inclus dans le changelog maître de `backend/app` (aucun changeset existant n'est modifié).
 Identifiants `uuid` générés par l'application, dates d'audit en `timestamptz`, dates métier en
-`date` (jour de Paris, [research R8](./research.md)).
+`date` (jour au Maroc, fuseau `Africa/Casablanca`, [research R8](./research.md)).
 
 ## Vue d'ensemble
 
@@ -184,7 +184,7 @@ véhicule).
 | Valeur | Calcul | Exposée par |
 |---|---|---|
 | Kilométrage actuel | point le plus récent (date puis km) parmi relevés et entretiens, sinon kilométrage de départ | `Vehicle.currentMileage`, réponses d'écriture |
-| Totaux de dépenses | somme de `cost_cents` sur l'année civile en cours (Paris) et sur tout l'historique | `VehicleHistory.costTotals` |
+| Totaux de dépenses | somme de `cost_cents` sur l'année civile en cours (Maroc) et sur tout l'historique | `VehicleHistory.costTotals` |
 | Échéance d'une règle | [research R10](./research.md) | `DueItem` |
 | Suggestions d'échéances | types `ADMINISTRATIVE` actifs avec `suggest_from_age_years ≤ année − first_registration_year` (ou = 0 sans année), sans échéance à faire de ce type, non ignorés | `GET /vehicles/{id}/deadline-suggestions` |
 | Rappel de relevé | véhicule actif dont `current_mileage_date < aujourd'hui − 30 jours` | `Reminders.mileageReadings` |

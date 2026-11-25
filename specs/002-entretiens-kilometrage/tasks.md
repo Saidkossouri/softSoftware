@@ -51,7 +51,7 @@ testable seule, dans l'ordre des priorités de la spec.
 - [ ] T002 Lancer `./gradlew :backend:api-contract:compileJava` et vérifier la génération de `uploadRecordDocument` (paramètre `MultipartFile file`) et de `getDocumentContent` (retour `ResponseEntity<org.springframework.core.io.Resource>`) ; si le générateur produit autre chose, ajuster uniquement la configuration `openApiGenerate` de `backend/api-contract/build.gradle.kts` (par exemple `typeMappings`/`importMappings` pour `binary` → `Resource`), sans toucher au contrat ([research R15](./research.md))
 - [ ] T003 Créer les sous-projets `backend/maintenance/build.gradle.kts` (`api(project(":backend:vehicle"))`), `backend/schedule/build.gradle.kts` (`api(project(":backend:maintenance"))`) et `backend/document/build.gradle.kts` (`api(project(":backend:maintenance"))`), tous avec le plugin `carsupervision.java-module`, et les déclarer dans `settings.gradle.kts` avec un commentaire d'une ligne chacun
 - [ ] T004 Ajouter `implementation(project(":backend:schedule"))` et `implementation(project(":backend:document"))` dans `backend/app/build.gradle.kts`
-- [ ] T005 [P] Compléter `backend/app/src/main/resources/application.yaml` : `spring.servlet.multipart.max-file-size: 10MB`, `max-request-size: 11MB`, `app.time-zone: ${APP_TIME_ZONE:Europe/Paris}`, `app.documents.storage: local`, `app.documents.storage-dir: ${DOCUMENTS_DIR:./data/documents}`
+- [ ] T005 [P] Compléter `backend/app/src/main/resources/application.yaml` : `spring.servlet.multipart.max-file-size: 10MB`, `max-request-size: 11MB`, `app.time-zone: ${APP_TIME_ZONE:Africa/Casablanca}`, `app.documents.storage: local`, `app.documents.storage-dir: ${DOCUMENTS_DIR:./data/documents}`
 - [ ] T006 [P] Ajouter `DOCUMENTS_DIR` (commenté, avec la valeur par défaut) dans `.env.example` et `data/` dans `.gitignore`
 - [ ] T007 [P] Dans `compose.yaml`, service `backend` : variable `DOCUMENTS_DIR: /var/lib/carsupervision/documents` et volume nommé `documents-data` monté sur ce chemin ; déclarer `documents-data` dans `volumes:` ; dans `backend/Dockerfile`, créer ce dossier avec l'utilisateur d'exécution comme propriétaire
 - [ ] T008 [P] Ajouter `client_max_body_size 11m;` dans le bloc `server` de `frontend/nginx/default.conf.template` (commentaire : justificatifs de 10 Mo, FR-030)
@@ -68,8 +68,8 @@ testable seule, dans l'ordre des priorités de la spec.
 ### Socle commun
 
 - [ ] T010 Ajouter à `backend/common/src/main/java/fr/carsupervision/common/error/ErrorCode.java` les codes `VEHICLE_ARCHIVED`, `NOT_AUTHOR`, `MILEAGE_INCONSISTENT`, `MILEAGE_JUMP_NOT_CONFIRMED`, `INITIAL_MILEAGE_ABOVE_RECORDS`, `RULE_ALREADY_EXISTS`, `DOCUMENT_TYPE_NOT_ALLOWED`, `DOCUMENT_TOO_LARGE`, `DOCUMENT_LIMIT_REACHED`, `TYPE_NAME_ALREADY_EXISTS` (mêmes noms que l'énumération `Problem.code` du contrat)
-- [ ] T011 Créer `backend/common/src/main/java/fr/carsupervision/common/time/Today.java` : composant qui renvoie `LocalDate.now(clock.withZone(zone))` avec `zone` lu dans `app.time-zone` (défaut `Europe/Paris`) et l'horloge partagée de `ClockConfig` ([R8](./research.md)), plus `year()`
-- [ ] T012 [P] Test unitaire `backend/common/src/test/java/fr/carsupervision/common/time/TodayTest.java` : à 23 h 30 UTC le 31 décembre, `Today` renvoie le 1er janvier à Paris
+- [ ] T011 Créer `backend/common/src/main/java/fr/carsupervision/common/time/Today.java` : composant qui renvoie `LocalDate.now(clock.withZone(zone))` avec `zone` lu dans `app.time-zone` (défaut `Africa/Casablanca`) et l'horloge partagée de `ClockConfig` ([R8](./research.md)), plus `year()`
+- [ ] T012 [P] Test unitaire `backend/common/src/test/java/fr/carsupervision/common/time/TodayTest.java` : à 23 h 30 UTC le 31 décembre, `Today` renvoie le 1er janvier à Casablanca (UTC+1) ; pendant le ramadan (UTC+0), 23 h 30 UTC reste le jour même
 
 ### Véhicule : kilométrage actuel et écriture
 
@@ -89,7 +89,7 @@ testable seule, dans l'ordre des priorités de la spec.
 
 ### Socle frontend
 
-- [ ] T023 [P] Créer `FE/lib/format.ts` : `formatKm(52000)` → « 52 000 km », `formatEuros(18950)` → « 189,50 € » (`Intl.NumberFormat('fr-FR')`), `parseEurosToCents("189,5")` → 18950 (virgule ou point, 2 décimales au plus, sinon erreur), `formatDate` en « 24/11/2026 » ; tests dans `frontend/tests/format.test.ts`
+- [ ] T023 [P] Créer `FE/lib/format.ts` : `formatKm(52000)` → « 52 000 km », `formatMoney(123450)` → « 1 234,50 DH » (dirham, [R7](./research.md)), `parseMoneyToCents("189,5")` → 18950 (virgule ou point, 2 décimales au plus, sinon erreur), `formatDate` en « 24/11/2026 » ; tests dans `frontend/tests/format.test.ts`
 - [ ] T024 [P] Ajouter dans `FE/i18n/fr.ts` les libellés des catégories (« Entretien », « Administratif »), des états (« En retard », « Bientôt », « À jour ») et des nouveaux codes d'erreur ; les noms des types d'entretien viennent du catalogue, pas de `fr.ts` ([R9](./research.md))
 - [ ] T025 Afficher `currentMileage` (« 52 000 km · relevé le 24/11/2026 ») sur chaque carte de `FE/pages/VehiclesPage.tsx` et dans `FE/pages/admin/FleetPage.tsx` ; mettre à jour `frontend/tests/VehiclesPage.test.tsx`
 
@@ -105,7 +105,7 @@ testable seule, dans l'ordre des priorités de la spec.
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T026 [P] [US1] IT `IT/maintenance/MileageReadingsIT.java` : création (201, `currentMileage` à jour), baisse refusée 409 `MILEAGE_INCONSISTENT` avec le point bloquant dans `detail`, relevé rétroactif cohérent accepté sans changer le kilométrage actuel, deux relevés le même jour acceptés, inférieur au kilométrage de départ refusé, date future refusée 400 (date de Paris), écart > 100 000 km refusé 409 `MILEAGE_JUMP_NOT_CONFIRMED` puis accepté avec `confirmLargeJump: true`, correction et suppression qui recalculent le kilométrage actuel (US1-1 à US1-5, FR-005 à FR-008)
+- [ ] T026 [P] [US1] IT `IT/maintenance/MileageReadingsIT.java` : création (201, `currentMileage` à jour), baisse refusée 409 `MILEAGE_INCONSISTENT` avec le point bloquant dans `detail`, relevé rétroactif cohérent accepté sans changer le kilométrage actuel, deux relevés le même jour acceptés, inférieur au kilométrage de départ refusé, date future refusée 400 (date du jour à Casablanca), écart > 100 000 km refusé 409 `MILEAGE_JUMP_NOT_CONFIRMED` puis accepté avec `confirmLargeJump: true`, correction et suppression qui recalculent le kilométrage actuel (US1-1 à US1-5, FR-005 à FR-008)
 - [ ] T027 [P] [US1] IT `IT/maintenance/MileageAccessIT.java` : USER non attribué → 403 `VEHICLE_FORBIDDEN` sur création, correction, suppression (y compris identifiant inexistant) ; véhicule archivé → 409 `VEHICLE_ARCHIVED` même pour un ADMIN ; USER qui corrige le relevé d'un autre → 403 `NOT_AUTHOR` ; ADMIN corrige le relevé d'un USER → 200 ; auteur supprimé de la liste blanche → relevé conservé avec `authorName`
 - [ ] T028 [P] [US1] IT `IT/vehicle/InitialMileageFloorIT.java` : kilométrage de départ supérieur au plus petit relevé → 409 `INITIAL_MILEAGE_ABOVE_RECORDS` ; égal → accepté (FR-009)
 - [ ] T029 [P] [US1] IT `IT/maintenance/MileageConcurrencyIT.java` : deux créations simultanées incompatibles (même véhicule, dates croisées) → une seule réussit, l'autre reçoit 409 (verrou par véhicule, [R4](./research.md))
@@ -134,7 +134,7 @@ testable seule, dans l'ordre des priorités de la spec.
 
 **Goal**: enregistrer, modifier et supprimer un entretien ; son kilométrage compte comme un relevé.
 
-**Independent Test**: enregistrer une révision (Vidange + Filtre à huile, 189 €, « Garage du Centre ») sur un véhicule autorisé et la retrouver avec toutes ses informations ([quickstart](./quickstart.md) 4, 5, 18).
+**Independent Test**: enregistrer une révision (Vidange + Filtre à huile, 450 DH, « Garage du Centre ») sur un véhicule autorisé et la retrouver avec toutes ses informations ([quickstart](./quickstart.md) 4, 5, 18).
 
 ### Tests for User Story 2 ⚠️
 
@@ -153,7 +153,7 @@ testable seule, dans l'ordre des priorités de la spec.
 - [ ] T052 [P] [US2] Mapper `MNT/MaintenanceRecordMapper.java`
 - [ ] T053 [US2] `MNT/MaintenanceRecordsController.java` (`createMaintenanceRecord` 201, `getMaintenanceRecord`, `updateMaintenanceRecord`, `deleteMaintenanceRecord` 204)
 - [ ] T054 [P] [US2] Hooks `FE/api/maintenance.ts` (`useMaintenanceTypes(category)`, `useMaintenanceRecord`, création, modification, suppression)
-- [ ] T055 [US2] Page `FE/pages/MaintenanceRecordFormPage.tsx` (routes `vehicules/:vehicleId/entretiens/nouveau` et `entretiens/:recordId/modifier` dans `FE/App.tsx`) : date, kilométrage (`inputMode="numeric"`), types d'entretien du catalogue (catégorie Entretien) en cases à cocher (grandes zones tactiles), description obligatoire si un type coché l'exige, coût en euros (`inputMode="decimal"`, `parseEurosToCents`), garage, remarques ; même gestion des 409 que `MileageReadingDialog` ; erreurs par champ sans perte de saisie
+- [ ] T055 [US2] Page `FE/pages/MaintenanceRecordFormPage.tsx` (routes `vehicules/:vehicleId/entretiens/nouveau` et `entretiens/:recordId/modifier` dans `FE/App.tsx`) : date, kilométrage (`inputMode="numeric"`), types d'entretien du catalogue (catégorie Entretien) en cases à cocher (grandes zones tactiles), description obligatoire si un type coché l'exige, coût en dirhams (`inputMode="decimal"`, `parseMoneyToCents`), garage, remarques ; même gestion des 409 que `MileageReadingDialog` ; erreurs par champ sans perte de saisie
 - [ ] T056 [US2] Page `FE/pages/MaintenanceRecordPage.tsx` (route `entretiens/:recordId`) : détail, auteur, boutons Modifier/Supprimer seulement si `canEdit`, suppression avec confirmation
 - [ ] T057 [P] [US2] Test `frontend/tests/MaintenanceRecordFormPage.test.tsx` : un type à description obligatoire exige une description, conversion du coût, envoi des `typeIds`
 
@@ -169,7 +169,7 @@ testable seule, dans l'ordre des priorités de la spec.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T058 [P] [US3] IT `IT/maintenance/VehicleHistoryIT.java` : ordre (date décroissante, puis kilométrage décroissant), totaux 420 € cette année et 870 € au total avec des entretiens sans coût ignorés (US3-2, SC-006), filtre `typeId` de « Vidange » (relevés exclus), type renommé affiché sous son nouveau nom, `recordsOnly=true`, véhicule sans saisie (kilométrage de départ, liste vide), `canEdit` selon l'auteur, `documentCount`, USER non attribué → 403, véhicule archivé lisible par l'ADMIN seulement (FR-018)
+- [ ] T058 [P] [US3] IT `IT/maintenance/VehicleHistoryIT.java` : ordre (date décroissante, puis kilométrage décroissant), totaux 1 100 DH cette année et 2 300 DH au total avec des entretiens sans coût ignorés (US3-2, SC-006), filtre `typeId` de « Vidange » (relevés exclus), type renommé affiché sous son nouveau nom, `recordsOnly=true`, véhicule sans saisie (kilométrage de départ, liste vide), `canEdit` selon l'auteur, `documentCount`, USER non attribué → 403, véhicule archivé lisible par l'ADMIN seulement (FR-018)
 
 ### Implementation for User Story 3
 
@@ -281,7 +281,9 @@ testable seule, dans l'ordre des priorités de la spec.
 - [ ] T108 [P] Ajouter au `README.md` la consigne de sauvegarde conjointe de la base et du dossier des justificatifs (volume `documents-data`) ([quickstart §4](./quickstart.md))
 - [ ] T109 Vérifier tous les nouveaux écrans à 360 px (aucun débordement, zones tactiles, clavier numérique) en suivant la skill `charte-interface`, et corriger
 - [ ] T110 Dérouler les scénarios 1 à 25 du [quickstart](./quickstart.md) ; noter dans ce fichier ceux qui demandent une vérification manuelle de Said (téléphone réel, appareil photo)
-- [ ] T111 Lancer `./gradlew test`, `cd frontend && npm test -- --run && npm run lint && npm run build` et vérifier la CI verte sur la PR
+- [ ] T111 Immatriculations marocaines (fonctionnalité 001, non urgent) : dans `backend/vehicle/src/main/java/fr/carsupervision/vehicle/VehicleService.java` accepter les lettres arabes (`REGISTRATION_KEY` étendu à `\u0600-\u06FF`) et, dans `backend/common/src/main/java/fr/carsupervision/common/Normalizers.java`, les séparateurs `|` et `/` ; la clé d'unicité translittère la lettre de série (أ→A, ب→B, د→D, هـ→H, و→W, ط→T…) pour que « 12345-أ-6 » et « 12345 A 6 » soient le même véhicule ; tests unitaires dans `backend/common/src/test/java/fr/carsupervision/common/NormalizersTest.java` (nouveau) et IT dans `backend/app/src/test/java/fr/carsupervision/vehicle/VehiclesAdminIT.java` (doublon latin/arabe refusé 409) ; dans `frontend/src/i18n/fr.ts`, exemple « 12345-أ-6 » à la place de « AB-123-CD » et message d'erreur mis à jour. Aucun changeset : les clés existantes, en lettres latines, restent valides
+- [ ] T112 [P] Remplacer dans `frontend/src/components/Plate.tsx` le bandeau bleu « F » de plaque française par un affichage d'immatriculation marocaine (numéro, lettre, code préfecture, ex. « 12345 | أ | 6 », sans bandeau européen, texte arabe en `dir="auto"`), vérifier son rendu dans les listes et fiches à 360 px (skill `charte-interface`) ; non urgent, peut partir dans une PR séparée avec T111
+- [ ] T113 Lancer `./gradlew test`, `cd frontend && npm test -- --run && npm run lint && npm run build` et vérifier la CI verte sur la PR
 
 ---
 

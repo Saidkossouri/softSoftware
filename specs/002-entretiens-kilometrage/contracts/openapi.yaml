@@ -1611,7 +1611,7 @@ components:
         readingDate:
           type: string
           format: date
-          description: Pas dans le futur (jour de Paris).
+          description: Pas dans le futur (jour au Maroc).
         mileageKm:
           type: integer
           minimum: 0
@@ -1681,7 +1681,7 @@ components:
           type: integer
           minimum: 0
           maximum: 100000000
-          description: Coût total TTC en centimes d'euro (189,00 € = 18900).
+          description: Coût total TTC en centimes de dirham (450,00 DH = 45000).
         garage:
           type: string
           maxLength: 100
@@ -1780,7 +1780,7 @@ components:
       properties:
         year:
           type: integer
-          description: Année civile en cours (Paris).
+          description: Année civile en cours (Maroc).
         currentYearCents:
           type: integer
         allTimeCents:

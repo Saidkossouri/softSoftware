@@ -52,7 +52,7 @@ saisi compte aussi comme un relevé du véhicule.
 donnée dont les futures échéances auront besoin (« dernière vidange à telle date et tel
 kilométrage »).
 
-**Independent Test**: enregistrer une révision (vidange + filtres, 189 €, garage « Garage du
+**Independent Test**: enregistrer une révision (vidange + filtres, 450 DH, garage « Garage du
 Centre ») sur un véhicule autorisé, puis la retrouver dans l'historique du véhicule avec toutes
 ses informations.
 
@@ -60,7 +60,7 @@ ses informations.
 
 1. **Given** un USER autorisé sur le véhicule A, **When** il enregistre un entretien daté du
    jour, à 52 000 km, avec les opérations « Vidange » et « Filtre à huile », un coût de
-   189,00 € et le garage « Garage du Centre », **Then** l'entretien apparaît en tête de
+   450,00 DH et le garage « Garage du Centre », **Then** l'entretien apparaît en tête de
    l'historique de A avec ces informations et l'auteur de la saisie.
 2. **Given** ce même entretien à 52 000 km plus récent que le dernier relevé, **When** il est
    enregistré, **Then** le kilométrage actuel de A passe à 52 000 km.
@@ -96,9 +96,9 @@ vérifier l'ordre chronologique, les totaux et le filtre « Vidange ».
 1. **Given** un véhicule avec des entretiens et des relevés, **When** un membre autorisé ouvre
    sa fiche, **Then** il voit le kilométrage actuel, la date du dernier relevé et l'historique
    du plus récent au plus ancien.
-2. **Given** des entretiens de 120 € et 300 € cette année et de 450 € l'année dernière, **When**
-   le membre consulte la fiche, **Then** il voit un total de 420 € pour l'année en cours et
-   870 € depuis le début du suivi ; les entretiens sans coût ne sont pas comptés.
+2. **Given** des entretiens de 300 DH et 800 DH cette année et de 1 200 DH l'année dernière, **When**
+   le membre consulte la fiche, **Then** il voit un total de 1 100 DH pour l'année en cours et
+   2 300 DH depuis le début du suivi ; les entretiens sans coût ne sont pas comptés.
 3. **Given** l'historique d'un véhicule, **When** le membre filtre sur « Vidange », **Then**
    seuls les entretiens comportant une vidange sont affichés, le plus récent en premier.
 4. **Given** un véhicule sans aucune saisie, **When** un membre ouvre sa fiche, **Then** il
@@ -308,7 +308,7 @@ membre voit ces changements dans le formulaire d'entretien et lors de la créati
 
 - **FR-010**: Un membre DOIT pouvoir enregistrer un entretien avec : date (obligatoire, pas dans
   le futur), kilométrage (obligatoire, soumis aux mêmes règles de cohérence que les relevés),
-  une ou plusieurs opérations (obligatoire), coût total TTC en euros (facultatif, positif ou
+  une ou plusieurs opérations (obligatoire), coût total TTC en dirhams (facultatif, positif ou
   nul, 2 décimales au plus), garage ou intervenant (facultatif, texte libre, « Moi-même »
   possible) et remarques (facultatives).
 - **FR-011**: Les opérations d'un entretien DOIVENT être choisies parmi les types actifs de
@@ -336,7 +336,7 @@ membre voit ces changements dans le formulaire d'entretien et lors de la créati
 
 - **FR-019**: Les saisies de relevé et d'entretien DOIVENT être utilisables d'une main sur
   téléphone (largeur 360 px), avec un clavier numérique pour les kilométrages et montants.
-- **FR-020**: Les montants DOIVENT être affichés au format français (`1 234,50 €`) et les
+- **FR-020**: Les montants DOIVENT être affichés en dirhams (`1 234,50 DH`) et les
   kilométrages avec séparateur de milliers (`52 000 km`) ; les messages d'erreur sont en
   français et indiquent quoi faire.
 
@@ -512,7 +512,11 @@ membre voit ces changements dans le formulaire d'entretien et lors de la créati
 - Un entretien a un seul coût total ; la ventilation du coût par opération n'est pas
   nécessaire pour un usage familial.
 - Le garage est un texte libre ; il n'y a pas de carnet d'adresses de garages.
-- Les montants sont en euros uniquement.
+- Les montants sont en dirhams marocains (MAD, affichés « DH ») uniquement ; la date du jour
+  est celle du Maroc (fuseau `Africa/Casablanca`, qui suit le passage à UTC+0 pendant le
+  ramadan).
+- Au Maroc la vignette se paie en janvier : le membre fixe la date de l'échéance « Vignette »
+  (par exemple le 31 janvier) en acceptant la suggestion ; aucune date n'est imposée.
 - La consommation de carburant (pleins) n'est pas suivie.
 - Pas d'export (CSV, PDF) ni de graphique dans cette fonctionnalité.
 - Volumétrie conforme à la constitution : quelques centaines de saisies par véhicule au plus ;

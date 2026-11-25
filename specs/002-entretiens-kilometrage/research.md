@@ -124,7 +124,10 @@ Testcontainers, React, shadcn/ui) est celui de la fonctionnalité 001
 
 - **Décision** : coût en centimes (`cost_cents integer`, `costCents` dans le contrat) ; totaux
   calculés en base (`sum`) sur des entiers. Le frontend convertit la saisie « 189,50 » en 18950
-  et affiche avec `Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' })`.
+  et affiche en dirhams : `Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2,
+  maximumFractionDigits: 2 })` suivi de « DH » (« 1 234,50 DH »), l'écriture courante au
+  Maroc ; `currency: 'MAD'` afficherait « MAD », moins naturel. Une seule devise, pas de
+  colonne devise.
 - **Justification** : aucun arrondi possible (SC-006) ; les entiers passent sans perte en JSON
   et en TypeScript.
 - **Alternatives écartées** : `number` décimal en JSON (risque d'arrondi en JavaScript) ;
@@ -133,10 +136,11 @@ Testcontainers, React, shadcn/ui) est celui de la fonctionnalité 001
 ## R8. Dates « du jour » et fuseau horaire
 
 - **Décision** : nouveau composant `common.time.Today` qui donne la date du jour dans le fuseau
-  `app.time-zone` (par défaut `Europe/Paris`) à partir de l'horloge partagée. Il sert aux
+  `app.time-zone` (par défaut `Africa/Casablanca`) à partir de l'horloge partagée. Il sert aux
   contrôles « pas dans le futur », à l'année des totaux et au calcul des échéances.
-- **Justification** : l'horloge est en UTC ; un relevé saisi à 00 h 30 à Paris ne doit pas être
-  refusé comme « dans le futur ». Les tests fixent l'horloge.
+- **Justification** : l'horloge est en UTC ; un relevé saisi à 00 h 30 au Maroc (UTC+1) ne doit pas être
+  refusé comme « dans le futur ». `Africa/Casablanca` suit le retour à UTC+0 pendant le
+  ramadan (base tzdata du JDK, à garder à jour). Les tests fixent l'horloge.
 
 ## R9. Catalogue des types d'entretien géré par l'ADMIN
 

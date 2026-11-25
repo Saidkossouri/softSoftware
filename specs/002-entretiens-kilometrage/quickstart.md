@@ -46,8 +46,8 @@ seulement au USER.
 | 1 | USER, sur téléphone : « Mes véhicules » → A → « Relever le kilométrage », saisir 51 200 | A affiche 51 200 km et la date du jour, en moins de 20 s | US1-1, SC-001 |
 | 2 | Saisir 50 900 km daté d'aujourd'hui | Refus citant le relevé de 51 200 km | US1-2, SC-003 |
 | 3 | Saisir 251 300 km | Demande de confirmation (écart > 100 000 km) ; annuler | FR-007 |
-| 4 | Enregistrer un entretien : Vidange + Filtre à huile, 52 000 km, 189,00 €, « Garage du Centre » | En tête de l'historique, kilométrage actuel 52 000 km, en moins de 1 min 30 | US2-1, US2-2, SC-002 |
-| 5 | Ajouter un entretien daté de l'an dernier à 48 000 km (vieux carnet), 450 € | Rangé à sa place ; kilométrage actuel inchangé ; totaux : 189 € cette année, 639 € depuis le début | US2-6, US3-2 |
+| 4 | Enregistrer un entretien : Vidange + Filtre à huile, 52 000 km, 450,00 DH, « Garage du Centre » | En tête de l'historique, kilométrage actuel 52 000 km, en moins de 1 min 30 | US2-1, US2-2, SC-002 |
+| 5 | Ajouter un entretien daté de l'an dernier à 48 000 km (vieux carnet), 1 200 DH | Rangé à sa place ; kilométrage actuel inchangé ; totaux : 450 DH cette année, 1 650 DH depuis le début | US2-6, US3-2 |
 | 6 | Filtrer l'historique sur « Vidange » | Seuls les entretiens avec vidange, en moins de 10 s | US3-3, SC-005 |
 | 7 | ADMIN : modifier le kilométrage de départ de A à 49 000 km | Refusé (plus grand que 48 000 km déjà saisi) | FR-009 |
 | 8 | USER : créer la règle « Vidange » (défaut proposé par le catalogue : 10 000 km ou 12 mois) | Prochaine vidange à 62 000 km ou dans 12 mois, état « À jour » | US4-1, FR-022 |

@@ -51,8 +51,8 @@ Cloud Run) ; navigateurs mobiles et desktop récents.
 moins de 10 s en 4G ; accueil avec rappels en moins de 2 s sur mobile.
 
 **Constraints**: droits réévalués à chaque requête ; aucun justificatif accessible sans
-session autorisée ; fichiers de 10 Mo au plus ; montants sans arrondi ; dates au jour de
-Paris ; interface en français, utilisable d'une main à 360 px ; charte v2 « Lumineux »
+session autorisée ; fichiers de 10 Mo au plus ; montants sans arrondi ; dates au jour du
+Maroc (`Africa/Casablanca`) ; interface en français, utilisable d'une main à 360 px ; charte v2 « Lumineux »
 (skill `charte-interface`).
 
 **Scale/Scope**: 2 à 5 membres, 2 à 5 véhicules, quelques centaines de saisies et de
@@ -118,7 +118,7 @@ backend/
 ├── common/
 │   ├── error/ErrorCode              # + 10 codes (VEHICLE_ARCHIVED, NOT_AUTHOR, MILEAGE_…, DOCUMENT_…, TYPE_NAME_ALREADY_EXISTS)
 │   ├── error/ApiExceptionHandler    # + 413 multipart en Problem Details
-│   └── time/Today                   # date du jour à Paris (app.time-zone)
+│   └── time/Today                   # date du jour au Maroc (app.time-zone)
 ├── vehicle/
 │   ├── Vehicle, VehicleMapper       # + currentMileageKm, currentMileageDate
 │   ├── VehicleService               # + updateCurrentMileage ; contrôle FR-009 via VehicleMileageFloor
@@ -161,7 +161,7 @@ backend/
 
 frontend/src/
 ├── i18n/fr.ts                       # catégories, états, messages (les noms de types viennent du catalogue)
-├── lib/format.ts                    # montants (€), kilométrages, dates en français
+├── lib/format.ts                    # montants (DH), kilométrages, dates en français
 ├── pages/
 │   ├── VehiclesPage.tsx             # + kilométrage actuel, saisie rapide d'un relevé, rappels
 │   ├── VehicleDetailPage.tsx        # + kilométrage, échéances, totaux, historique filtrable

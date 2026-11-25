@@ -1,5 +1,6 @@
 package fr.carsupervision.maintenance;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,4 +17,23 @@ public interface MaintenanceRecordRepository extends JpaRepository<MaintenanceRe
 
     @Query("select min(r.mileageKm) from MaintenanceRecord r where r.vehicleId = :vehicleId")
     Integer findLowestMileage(UUID vehicleId);
+
+    List<MaintenanceRecord> findByVehicleId(UUID vehicleId);
+
+    /** Entretiens d'un véhicule comportant un type donné (filtre FR-016). */
+    @Query("""
+            select distinct r from MaintenanceRecord r join r.types t
+            where r.vehicleId = :vehicleId and t.id = :typeId
+            """)
+    List<MaintenanceRecord> findByVehicleIdAndType(UUID vehicleId, UUID typeId);
+
+    /** Somme des coûts saisis, en centimes ; les entretiens sans coût ne comptent pas (FR-015). */
+    @Query("select coalesce(sum(r.costCents), 0) from MaintenanceRecord r where r.vehicleId = :vehicleId")
+    long sumCost(UUID vehicleId);
+
+    @Query("""
+            select coalesce(sum(r.costCents), 0) from MaintenanceRecord r
+            where r.vehicleId = :vehicleId and r.recordDate between :from and :to
+            """)
+    long sumCostBetween(UUID vehicleId, LocalDate from, LocalDate to);
 }

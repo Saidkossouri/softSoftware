@@ -40,8 +40,8 @@ export function BackLink({ to, children }: { to: string; children: string }) {
 }
 
 /** Petite étiquette de section, en majuscules. */
-export function SectionLabel({ children, className }: { children: string; className?: string }) {
+export function SectionLabel({ children, className, id }: { children: string; className?: string; id?: string }) {
   return (
-    <p className={cn('text-xs font-semibold tracking-wider text-muted-foreground uppercase', className)}>{children}</p>
+    <p id={id} className={cn('text-xs font-semibold tracking-wider text-muted-foreground uppercase', className)}>{children}</p>
   )
 }

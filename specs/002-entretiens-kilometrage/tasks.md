@@ -169,15 +169,15 @@ testable seule, dans l'ordre des priorités de la spec.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T058 [P] [US3] IT `IT/maintenance/VehicleHistoryIT.java` : ordre (date décroissante, puis kilométrage décroissant), totaux 1 100 DH cette année et 2 300 DH au total avec des entretiens sans coût ignorés (US3-2, SC-006), filtre `typeId` de « Vidange » (relevés exclus), type renommé affiché sous son nouveau nom, `recordsOnly=true`, véhicule sans saisie (kilométrage de départ, liste vide), `canEdit` selon l'auteur, `documentCount`, USER non attribué → 403, véhicule archivé lisible par l'ADMIN seulement (FR-018)
+- [X] T058 [P] [US3] IT `IT/maintenance/VehicleHistoryIT.java` : ordre (date décroissante, puis kilométrage décroissant), totaux 1 100 DH cette année et 2 300 DH au total avec des entretiens sans coût ignorés (US3-2, SC-006), filtre `typeId` de « Vidange » (relevés exclus), type renommé affiché sous son nouveau nom, `recordsOnly=true`, véhicule sans saisie (kilométrage de départ, liste vide), `canEdit` selon l'auteur, `documentCount`, USER non attribué → 403, véhicule archivé lisible par l'ADMIN seulement (FR-018)
 
 ### Implementation for User Story 3
 
-- [ ] T059 [US3] `MNT/VehicleHistoryService.java` : fusion relevés + entretiens triés, filtres, totaux en centimes par `sum` en base sur l'année `Today.year()` et sur tout l'historique, `documentCount` via `RecordDocumentCounter`
-- [ ] T060 [US3] `MNT/VehicleHistoryController.java` (`getVehicleHistory`)
-- [ ] T061 [P] [US3] Hook `FE/api/history.ts` (`useVehicleHistory(vehicleId, filters)`)
-- [ ] T062 [US3] Refaire `FE/pages/VehicleDetailPage.tsx` : en-tête kilométrage actuel et date, tuiles « Dépenses {année} » et « Depuis le début », boutons « Relever le kilométrage » et « Ajouter un entretien », historique en liste (icône relevé ou entretien, types, coût, garage, nombre de justificatifs), filtre par type et bascule « Entretiens seulement », état vide invitant à une première saisie (US3-4)
-- [ ] T063 [P] [US3] Test `frontend/tests/VehicleDetailPage.test.tsx` : totaux formatés, filtre, état vide
+- [X] T059 [US3] `MNT/VehicleHistoryService.java` : fusion relevés + entretiens triés, filtres, totaux en centimes par `sum` en base sur l'année `Today.year()` et sur tout l'historique, `documentCount` via `RecordDocumentCounter`
+- [X] T060 [US3] `getVehicleHistory` dans `MNT/MaintenanceRecordsController.java` (le contrat range l'opération sous le tag maintenance, donc dans `MaintenanceApi`) et `MNT/VehicleHistoryMapper.java`
+- [X] T061 [P] [US3] Hook `FE/api/history.ts` (`useVehicleHistory(vehicleId, filters)`)
+- [X] T062 [US3] Refaire `FE/pages/VehicleDetailPage.tsx` : en-tête kilométrage actuel et date, tuiles « Dépenses {année} » et « Depuis le début », boutons « Relever le kilométrage » et « Ajouter un entretien », historique en liste (icône relevé ou entretien, types, coût, garage, nombre de justificatifs), filtre par type et bascule « Entretiens seulement », état vide invitant à une première saisie (US3-4)
+- [X] T063 [P] [US3] Test `frontend/tests/VehicleDetailPage.test.tsx` : totaux formatés, filtre, état vide
 
 **Checkpoint**: US1 à US3 forment un carnet d'entretien complet.
 

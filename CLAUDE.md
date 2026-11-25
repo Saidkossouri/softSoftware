@@ -72,7 +72,8 @@ Sous Windows, remplacer `./gradlew` par `.\gradlew.bat`.
 - `backend/vehicle/` : parc de véhicules (`VehicleService`, `/api/vehicles`), attributions,
   kilométrage actuel, `VehicleAccessGuard` (lecture, `lockForWrite`) et `AuthorPolicy`.
 - `backend/maintenance/` : relevés de kilométrage (`MileageReadingService`, règle
-  `MileageConsistency`), entretiens (`MaintenanceRecordService`), catalogue des types
+  `MileageConsistency`), entretiens (`MaintenanceRecordService`), historique et dépenses
+  (`VehicleHistoryService`, `/vehicles/{id}/history`), catalogue des types
   (`MaintenanceTypeService`, pré-rempli par le changeset 007 ; écritures ADMIN en US6).
 - `backend/schedule/`, `backend/document/` : échéances et justificatifs (002, à venir).
 - `backend/app/` : point d'entrée, `application.yaml`, changelog maître ; ses tests

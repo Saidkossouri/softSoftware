@@ -17,3 +17,6 @@ frontend/src/api/generated/
 .idea/
 .vscode/
 *.iml
+
+# Journaux du démon Kotlin (buildSrc)
+.kotlin/

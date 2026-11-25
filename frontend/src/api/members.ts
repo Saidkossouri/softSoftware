@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, unwrap, type MemberCreateRequest, type MemberUpdateRequest } from './client'
+import { api, unwrap, type MemberCreateRequest, type MemberUpdateRequest, type VehicleAccess } from './client'
 import { CURRENT_MEMBER_KEY } from '@/auth/AuthContext'
 
 const MEMBERS_KEY = ['members'] as const
 const memberKey = (id: string) => ['members', id] as const
+const memberAccessKey = (id: string) => ['members', id, 'vehicles'] as const
 
 export function useMembers() {
   return useQuery({
@@ -56,5 +57,25 @@ export function useDeleteMember(memberId: string) {
       queryClient.removeQueries({ queryKey: memberKey(memberId) })
       await queryClient.invalidateQueries({ queryKey: MEMBERS_KEY })
     },
+  })
+}
+
+/** Véhicules attribués à un membre USER (actifs et archivés). */
+export function useMemberVehicleAccess(memberId: string, enabled = true) {
+  return useQuery({
+    queryKey: memberAccessKey(memberId),
+    queryFn: async () =>
+      unwrap(await api.GET('/members/{memberId}/vehicles', { params: { path: { memberId } } })),
+    enabled,
+  })
+}
+
+/** Remplace en une seule requête l'ensemble des véhicules attribués au membre. */
+export function useReplaceMemberVehicleAccess(memberId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: VehicleAccess) =>
+      unwrap(await api.PUT('/members/{memberId}/vehicles', { params: { path: { memberId } }, body })),
+    onSuccess: (data) => queryClient.setQueryData(memberAccessKey(memberId), data),
   })
 }

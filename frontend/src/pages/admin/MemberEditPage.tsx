@@ -17,10 +17,11 @@ import { useToast } from '@/components/ui/toast'
 import { fr } from '@/i18n/fr'
 import { lastLoginLabel } from './memberFormat'
 import { RoleSelect } from './RoleSelect'
+import { VehicleAccessCard } from './VehicleAccessCard'
 
 type EditMemberForm = { displayName: string; role: Role }
 
-/** Modification du nom et du rôle, retrait de l'accès (US2, FR-010, FR-012). */
+/** Modification du nom et du rôle, véhicules accessibles d'un USER, retrait de l'accès (US2, US4). */
 export function MemberEditPage() {
   const { memberId = '' } = useParams()
   const member = useMember(memberId)
@@ -47,6 +48,7 @@ export function MemberEditPage() {
         <>
           <MemberSummary member={member.data} />
           <EditMemberCard key={member.data.id} member={member.data} />
+          {member.data.role === 'USER' && <VehicleAccessCard key={member.data.id} member={member.data} />}
           <RemoveMemberCard member={member.data} />
         </>
       )}

@@ -5,6 +5,7 @@ import fr.carsupervision.api.model.VehicleInput;
 import fr.carsupervision.common.Normalizers;
 import fr.carsupervision.common.error.ApiException;
 import fr.carsupervision.common.error.ErrorCode;
+import fr.carsupervision.security.AuthenticatedMember;
 import fr.carsupervision.security.CurrentMember;
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -24,7 +25,6 @@ public class VehicleService {
 
     static final String REGISTRATION_ALREADY_EXISTS_MESSAGE =
             "Cette immatriculation est déjà utilisée par un autre véhicule (actif ou archivé).";
-    static final String FORBIDDEN_MESSAGE = "Vous n'avez pas accès à ce véhicule.";
 
     private static final int TEXT_MAX_LENGTH = 50;
     private static final int MAX_MILEAGE_KM = 2_000_000;
@@ -33,39 +33,40 @@ public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final VehicleMapper vehicleMapper;
+    private final VehicleAccessGuard accessGuard;
     private final CurrentMember currentMember;
     private final Clock clock;
 
     public VehicleService(VehicleRepository vehicleRepository, VehicleMapper vehicleMapper,
-            CurrentMember currentMember, Clock clock) {
+            VehicleAccessGuard accessGuard, CurrentMember currentMember, Clock clock) {
         this.vehicleRepository = vehicleRepository;
         this.vehicleMapper = vehicleMapper;
+        this.accessGuard = accessGuard;
         this.currentMember = currentMember;
         this.clock = clock;
     }
 
     /**
-     * Véhicules du statut demandé, triés par surnom. Les attributions d'un USER arrivent avec
-     * l'histoire 4 : d'ici là, un USER reçoit une liste vide et ne peut pas voir les archivés.
+     * Véhicules du statut demandé, triés par surnom. Un ADMIN voit tout le parc ; un USER ne voit
+     * que ses véhicules actifs attribués et ne peut pas demander les archivés (FR-021).
      */
     @Transactional(readOnly = true)
     public List<Vehicle> list(VehicleStatus status) {
         VehicleStatus requested = status == null ? VehicleStatus.ACTIVE : status;
-        if (!currentMember.get().isAdmin()) {
+        AuthenticatedMember member = currentMember.get();
+        if (!member.isAdmin()) {
             if (requested == VehicleStatus.ARCHIVED) {
-                throw forbidden();
+                throw VehicleAccessGuard.forbidden();
             }
-            return List.of();
+            return vehicleRepository.findActiveAccessibleBy(member.id());
         }
         return vehicleRepository.findAllByStatusOrderByNicknameAsc(requested);
     }
 
-    /** ADMIN : 404 si inconnu. USER : 403 sans détail pour l'instant (attributions en histoire 4). */
+    /** ADMIN : 404 si inconnu. USER : 403 identique si inexistant, archivé ou non attribué. */
     @Transactional(readOnly = true)
     public Vehicle get(UUID id) {
-        if (!currentMember.get().isAdmin()) {
-            throw forbidden();
-        }
+        accessGuard.assertReadable(id);
         return find(id);
     }
 
@@ -180,9 +181,5 @@ public class VehicleService {
 
     private static ApiException registrationAlreadyExists() {
         return ApiException.conflict(ErrorCode.REGISTRATION_ALREADY_EXISTS, REGISTRATION_ALREADY_EXISTS_MESSAGE);
-    }
-
-    private static ApiException forbidden() {
-        return new ApiException(HttpStatus.FORBIDDEN, ErrorCode.VEHICLE_FORBIDDEN, FORBIDDEN_MESSAGE);
     }
 }

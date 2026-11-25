@@ -127,6 +127,24 @@ describe('parc de véhicules', () => {
     expect(await screen.findByText('Aucun véhicule archivé.')).toBeInTheDocument()
   })
 
+  it('confirme l’archivage dans un dialogue, annulable sans appel', async () => {
+    const fetchMock = stubApi({
+      'GET /api/me': { status: 200, body: ADMIN },
+      [`GET /api/vehicles/${vehicle.id}`]: { status: 200, body: vehicle },
+    })
+    goTo(`/admin/parc/${vehicle.id}`)
+    render(<App />)
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: 'Archiver le véhicule' }))
+    const dialog = screen.getByRole('dialog', { name: 'Archiver le véhicule' })
+    expect(within(dialog).getByRole('button', { name: "Confirmer l'archivage" })).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([request]) => (request as Request).url?.endsWith('/archive'))).toBe(false)
+  })
+
   it('masque le parc à un USER', async () => {
     stubApi({ 'GET /api/me': { status: 200, body: USER } })
     goTo('/admin/parc')

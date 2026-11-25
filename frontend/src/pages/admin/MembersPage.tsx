@@ -1,15 +1,20 @@
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { Pencil, UserPlus } from 'lucide-react'
 import { Link } from 'react-router'
 import type { Role } from '@/api/client'
 import { useCreateMember, useMembers } from '@/api/members'
 import { useAuth } from '@/auth/AuthContext'
 import { applyApiErrors, errorMessage, FormAlert, FormField } from '@/components/FormErrors'
+import { Avatar, ListCard, ListSkeleton } from '@/components/ListCard'
+import { PageHeader } from '@/components/PageHeader'
 import { Alert } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
+import { useToast } from '@/components/ui/toast'
 import { fr } from '@/i18n/fr'
 import { EMAIL_PATTERN, lastLoginLabel } from './memberFormat'
 import { RoleSelect } from './RoleSelect'
@@ -19,10 +24,11 @@ type AddMemberForm = { email: string; displayName: string; role: Role }
 /** Liste des membres et ajout d'un membre (US2, FR-010). */
 export function MembersPage() {
   return (
-    <div className="flex flex-col gap-4">
+    <>
+      <PageHeader title={fr.members.title} description={fr.members.description} />
       <MemberList />
       <AddMemberCard />
-    </div>
+    </>
   )
 }
 
@@ -31,64 +37,67 @@ function MemberList() {
   const { state } = useAuth()
   const currentId = state.status === 'authenticated' ? state.member.id : null
 
+  if (members.isPending) {
+    return <ListSkeleton />
+  }
+  if (members.isError) {
+    return (
+      <Alert variant="destructive">
+        {errorMessage(members.error)}
+        <Button variant="outline" size="sm" onClick={() => void members.refetch()}>
+          {fr.retry}
+        </Button>
+      </Alert>
+    )
+  }
+  if (members.data.length === 0) {
+    return (
+      <Card>
+        <EmptyState illustration="people" title={fr.members.empty} description={fr.members.emptyHint} />
+      </Card>
+    )
+  }
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{fr.members.title}</CardTitle>
-        <CardDescription>{fr.members.description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {members.isPending && <p className="text-muted-foreground">{fr.loading}</p>}
-        {members.isError && (
-          <Alert variant="destructive" className="flex flex-col items-start gap-3">
-            {errorMessage(members.error)}
-            <Button variant="outline" size="sm" onClick={() => void members.refetch()}>
-              {fr.retry}
-            </Button>
-          </Alert>
-        )}
-        {members.isSuccess && members.data.length === 0 && (
-          <p className="text-muted-foreground">{fr.members.empty}</p>
-        )}
-        {members.isSuccess && members.data.length > 0 && (
-          <ul className="flex flex-col divide-y">
-            {members.data.map((member) => (
-              <li key={member.id} className="flex items-center justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">
-                    {member.displayName ?? member.email}
-                    {member.id === currentId && (
-                      <span className="text-muted-foreground"> ({fr.members.you})</span>
-                    )}
-                  </p>
-                  {member.displayName && (
-                    <p className="truncate text-sm text-muted-foreground">{member.email}</p>
-                  )}
-                  <p className="text-sm text-muted-foreground">{lastLoginLabel(member)}</p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <Badge>{fr.roles[member.role]}</Badge>
-                  <Link
-                    to={`/admin/membres/${member.id}`}
-                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                    aria-label={`${fr.members.edit} ${member.email}`}
-                  >
-                    {fr.members.edit}
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+    <ul className="flex flex-col gap-3">
+      {members.data.map((member) => (
+        <ListCard
+          key={member.id}
+          leading={<Avatar name={member.displayName ?? member.email} />}
+          title={
+            <>
+              <span className="truncate">{member.displayName ?? member.email}</span>
+              {member.id === currentId && (
+                <span className="shrink-0 text-sm font-normal text-muted-foreground">({fr.members.you})</span>
+              )}
+            </>
+          }
+          subtitle={member.displayName ? member.email : undefined}
+          meta={
+            <>
+              <Badge variant={member.role === 'ADMIN' ? 'primary' : 'default'}>{fr.roles[member.role]}</Badge>
+              <span className="text-xs text-muted-foreground">{lastLoginLabel(member)}</span>
+            </>
+          }
+          trailing={
+            <Link
+              to={`/admin/membres/${member.id}`}
+              className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'size-11 px-0 sm:h-9 sm:w-auto sm:px-3' })}
+              aria-label={`${fr.members.edit} ${member.email}`}
+            >
+              <Pencil aria-hidden className="size-4" />
+              <span className="hidden sm:inline">{fr.members.edit}</span>
+            </Link>
+          }
+        />
+      ))}
+    </ul>
   )
 }
 
 function AddMemberCard() {
   const createMember = useCreateMember()
   const [generalError, setGeneralError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const toast = useToast()
   const {
     register,
     handleSubmit,
@@ -102,7 +111,6 @@ function AddMemberCard() {
 
   const onSubmit = handleSubmit(async (values) => {
     setGeneralError(null)
-    setSuccess(null)
     try {
       const created = await createMember.mutateAsync({
         email: values.email.trim(),
@@ -110,7 +118,7 @@ function AddMemberCard() {
         role: values.role,
       })
       reset()
-      setSuccess(fr.members.added(created.email))
+      toast.success(fr.members.added(created.email))
     } catch (error) {
       setGeneralError(
         applyApiErrors(error, setError, ['email', 'displayName', 'role'], {
@@ -123,7 +131,10 @@ function AddMemberCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{fr.members.addTitle}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <UserPlus aria-hidden className="size-5 text-primary" />
+          {fr.members.addTitle}
+        </CardTitle>
         <CardDescription>{fr.members.addDescription}</CardDescription>
       </CardHeader>
       <CardContent>
@@ -156,7 +167,6 @@ function AddMemberCard() {
           </FormField>
           <RoleSelect id="role" error={errors.role?.message} register={register('role')} value={role} />
           <FormAlert message={generalError} />
-          {success && <Alert role="status">{success}</Alert>}
           <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto sm:self-start">
             {isSubmitting ? fr.members.adding : fr.members.add}
           </Button>

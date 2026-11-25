@@ -1,22 +1,22 @@
 import type { ComponentProps } from 'react'
 import { cn } from '@/lib/utils'
 
-// Composants shadcn/ui.
+// Composants shadcn/ui, charte v2 : cartes blanches à ombre douce.
 export function Card({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
-      className={cn('rounded-xl border bg-card text-card-foreground shadow-sm', className)}
+      className={cn('rounded-2xl border border-border/60 bg-card text-card-foreground shadow-card', className)}
       {...props}
     />
   )
 }
 
 export function CardHeader({ className, ...props }: ComponentProps<'div'>) {
-  return <div className={cn('flex flex-col gap-1.5 p-5', className)} {...props} />
+  return <div className={cn('flex flex-col gap-1.5 p-5 sm:p-6', className)} {...props} />
 }
 
 export function CardTitle({ className, ...props }: ComponentProps<'h2'>) {
-  return <h2 className={cn('text-lg font-semibold leading-tight', className)} {...props} />
+  return <h2 className={cn('text-lg leading-tight font-semibold', className)} {...props} />
 }
 
 export function CardDescription({ className, ...props }: ComponentProps<'p'>) {
@@ -24,5 +24,5 @@ export function CardDescription({ className, ...props }: ComponentProps<'p'>) {
 }
 
 export function CardContent({ className, ...props }: ComponentProps<'div'>) {
-  return <div className={cn('p-5 pt-0', className)} {...props} />
+  return <div className={cn('p-5 pt-0 sm:p-6 sm:pt-0', className)} {...props} />
 }

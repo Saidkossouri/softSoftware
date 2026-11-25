@@ -1,14 +1,18 @@
-import { useState } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import type { EnergyType, Vehicle, VehicleInput } from '@/api/client'
 import { useArchiveVehicle, useCreateVehicle, useUpdateVehicle, useVehicle } from '@/api/vehicles'
 import { applyApiErrors, errorMessage, FormAlert, FormField } from '@/components/FormErrors'
+import { BackLink, PageHeader, SectionLabel } from '@/components/PageHeader'
 import { Alert } from '@/components/ui/alert'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/toast'
 import { fr } from '@/i18n/fr'
 
 type VehicleForm = {
@@ -80,23 +84,27 @@ function toInput(values: VehicleForm): VehicleInput {
 export function VehicleFormPage() {
   const { vehicleId } = useParams()
   return (
-    <div className="flex flex-col gap-4">
-      <Link to="/admin/parc" className={buttonVariants({ variant: 'ghost', className: 'self-start' })}>
-        ← {fr.fleet.back}
-      </Link>
-      {vehicleId ? <EditVehicle vehicleId={vehicleId} /> : <VehicleFormCard />}
-    </div>
+    <>
+      <BackLink to="/admin/parc">{fr.fleet.back}</BackLink>
+      {vehicleId ? <EditVehicle vehicleId={vehicleId} /> : <VehicleForm />}
+    </>
   )
 }
 
 function EditVehicle({ vehicleId }: { vehicleId: string }) {
   const vehicle = useVehicle(vehicleId)
   if (vehicle.isPending) {
-    return <p className="text-muted-foreground">{fr.loading}</p>
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true">
+        <p className="sr-only">{fr.loading}</p>
+        <Skeleton className="h-9 w-2/3" />
+        <Skeleton className="h-64" />
+      </div>
+    )
   }
   if (vehicle.isError) {
     return (
-      <Alert variant="destructive" className="flex flex-col items-start gap-3">
+      <Alert variant="destructive">
         {errorMessage(vehicle.error)}
         <Button variant="outline" size="sm" onClick={() => void vehicle.refetch()}>
           {fr.retry}
@@ -106,22 +114,19 @@ function EditVehicle({ vehicleId }: { vehicleId: string }) {
   }
   return (
     <>
-      <VehicleFormCard key={vehicle.data.id} vehicle={vehicle.data} />
-      {vehicle.data.status === 'ACTIVE' ? (
-        <ArchiveVehicleCard vehicle={vehicle.data} />
-      ) : (
-        <Alert role="status">{fr.fleet.archivedNotice}</Alert>
-      )}
+      {vehicle.data.status === 'ARCHIVED' && <Alert role="status">{fr.fleet.archivedNotice}</Alert>}
+      <VehicleForm key={vehicle.data.id} vehicle={vehicle.data} />
+      {vehicle.data.status === 'ACTIVE' && <ArchiveVehicleCard vehicle={vehicle.data} />}
     </>
   )
 }
 
-function VehicleFormCard({ vehicle }: { vehicle?: Vehicle }) {
+function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
   const createVehicle = useCreateVehicle()
   const updateVehicle = useUpdateVehicle(vehicle?.id ?? '')
   const navigate = useNavigate()
+  const toast = useToast()
   const [generalError, setGeneralError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
   const currentYear = new Date().getFullYear()
   const {
     register,
@@ -132,13 +137,13 @@ function VehicleFormCard({ vehicle }: { vehicle?: Vehicle }) {
 
   const onSubmit = handleSubmit(async (values) => {
     setGeneralError(null)
-    setSaved(false)
     try {
       if (vehicle) {
         await updateVehicle.mutateAsync(toInput(values))
-        setSaved(true)
+        toast.success(fr.fleet.saved)
       } else {
-        await createVehicle.mutateAsync(toInput(values))
+        const created = await createVehicle.mutateAsync(toInput(values))
+        toast.success(fr.fleet.created(created.nickname))
         void navigate('/admin/parc')
       }
     } catch (error) {
@@ -153,13 +158,13 @@ function VehicleFormCard({ vehicle }: { vehicle?: Vehicle }) {
   const describedBy = (field: keyof VehicleForm) => (errors[field] ? `${field}-error` : undefined)
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="truncate">{vehicle ? fr.fleet.editTitle : fr.fleet.createTitle}</CardTitle>
-        <CardDescription className="truncate">{vehicle ? vehicle.nickname : fr.fleet.createDescription}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+    <>
+      <PageHeader
+        title={vehicle ? vehicle.nickname : fr.fleet.createTitle}
+        description={vehicle ? fr.fleet.editTitle : fr.fleet.createDescription}
+      />
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+        <FormSection label={fr.fleet.sectionIdentity}>
           <FormField id="nickname" label={fr.fleet.nickname} error={errors.nickname?.message}>
             <Input
               id="nickname"
@@ -190,12 +195,15 @@ function VehicleFormCard({ vehicle }: { vehicle?: Vehicle }) {
               />
             </FormField>
           </div>
+        </FormSection>
+        <FormSection label={fr.fleet.sectionRegistration}>
           <FormField id="registration" label={fr.fleet.registration} error={errors.registration?.message}>
             <Input
               id="registration"
               autoComplete="off"
               autoCapitalize="characters"
               placeholder={fr.fleet.registrationPlaceholder}
+              className="h-12 border-2 border-foreground/70 text-center font-display text-lg font-semibold tracking-widest uppercase placeholder:font-normal sm:text-lg"
               aria-invalid={errors.registration ? true : undefined}
               aria-describedby={describedBy('registration')}
               {...register('registration', {
@@ -207,32 +215,12 @@ function VehicleFormCard({ vehicle }: { vehicle?: Vehicle }) {
             />
           </FormField>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              id="firstRegistrationYear"
-              label={fr.fleet.firstRegistrationYear}
-              error={errors.firstRegistrationYear?.message}
-            >
-              <Input
-                id="firstRegistrationYear"
-                inputMode="numeric"
-                autoComplete="off"
-                aria-invalid={errors.firstRegistrationYear ? true : undefined}
-                aria-describedby={describedBy('firstRegistrationYear')}
-                {...register('firstRegistrationYear', {
-                  validate: (v) => {
-                    const value = v.trim()
-                    if (value === '') return true
-                    const year = Number(value)
-                    return (INTEGER.test(value) && year >= 1900 && year <= currentYear) || fr.validation.year(currentYear)
-                  },
-                })}
-              />
-            </FormField>
             <FormField id="initialMileageKm" label={fr.fleet.initialMileageKm} error={errors.initialMileageKm?.message}>
               <Input
                 id="initialMileageKm"
                 inputMode="numeric"
                 autoComplete="off"
+                className="tabular-nums"
                 aria-invalid={errors.initialMileageKm ? true : undefined}
                 aria-describedby={describedBy('initialMileageKm')}
                 {...register('initialMileageKm', {
@@ -245,19 +233,31 @@ function VehicleFormCard({ vehicle }: { vehicle?: Vehicle }) {
                 })}
               />
             </FormField>
+            <FormField
+              id="firstRegistrationYear"
+              label={fr.fleet.firstRegistrationYear}
+              error={errors.firstRegistrationYear?.message}
+            >
+              <Input
+                id="firstRegistrationYear"
+                inputMode="numeric"
+                autoComplete="off"
+                className="tabular-nums"
+                aria-invalid={errors.firstRegistrationYear ? true : undefined}
+                aria-describedby={describedBy('firstRegistrationYear')}
+                {...register('firstRegistrationYear', {
+                  validate: (v) => {
+                    const value = v.trim()
+                    if (value === '') return true
+                    const year = Number(value)
+                    return (INTEGER.test(value) && year >= 1900 && year <= currentYear) || fr.validation.year(currentYear)
+                  },
+                })}
+              />
+            </FormField>
           </div>
-          <FormField id="vin" label={fr.fleet.vin} error={errors.vin?.message} hint={fr.fleet.vinHint}>
-            <Input
-              id="vin"
-              autoComplete="off"
-              autoCapitalize="characters"
-              aria-invalid={errors.vin ? true : undefined}
-              aria-describedby={describedBy('vin')}
-              {...register('vin', {
-                validate: (v) => v.trim() === '' || VIN.test(v.trim().toUpperCase()) || fr.validation.vin,
-              })}
-            />
-          </FormField>
+        </FormSection>
+        <FormSection label={fr.fleet.sectionDetails}>
           <FormField id="energyType" label={fr.fleet.energyType} error={errors.energyType?.message}>
             <Select id="energyType" aria-invalid={errors.energyType ? true : undefined} {...register('energyType')}>
               <option value="">{fr.fleet.energyNone}</option>
@@ -268,14 +268,37 @@ function VehicleFormCard({ vehicle }: { vehicle?: Vehicle }) {
               ))}
             </Select>
           </FormField>
-          <FormAlert message={generalError} />
-          {saved && <Alert role="status">{fr.fleet.saved}</Alert>}
-          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto sm:self-start">
-            {vehicle
-              ? isSubmitting ? fr.fleet.saving : fr.fleet.save
-              : isSubmitting ? fr.fleet.creating : fr.fleet.create}
-          </Button>
-        </form>
+          <FormField id="vin" label={fr.fleet.vin} error={errors.vin?.message} hint={fr.fleet.vinHint}>
+            <Input
+              id="vin"
+              autoComplete="off"
+              autoCapitalize="characters"
+              className="font-mono uppercase"
+              aria-invalid={errors.vin ? true : undefined}
+              aria-describedby={describedBy('vin')}
+              {...register('vin', {
+                validate: (v) => v.trim() === '' || VIN.test(v.trim().toUpperCase()) || fr.validation.vin,
+              })}
+            />
+          </FormField>
+        </FormSection>
+        <FormAlert message={generalError} />
+        <Button type="submit" size="lg" disabled={isSubmitting} className="w-full sm:w-auto sm:self-end">
+          {vehicle
+            ? isSubmitting ? fr.fleet.saving : fr.fleet.save
+            : isSubmitting ? fr.fleet.creating : fr.fleet.create}
+        </Button>
+      </form>
+    </>
+  )
+}
+
+function FormSection({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4 pt-5 sm:pt-6">
+        <SectionLabel>{label}</SectionLabel>
+        {children}
       </CardContent>
     </Card>
   )
@@ -284,39 +307,46 @@ function VehicleFormCard({ vehicle }: { vehicle?: Vehicle }) {
 function ArchiveVehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const archiveVehicle = useArchiveVehicle(vehicle.id)
   const navigate = useNavigate()
+  const toast = useToast()
   const [confirming, setConfirming] = useState(false)
+  const { reset } = archiveVehicle
+  const close = useCallback(() => {
+    setConfirming(false)
+    reset()
+  }, [reset])
 
   const archive = async () => {
     try {
       await archiveVehicle.mutateAsync()
+      toast.success(fr.fleet.archived(vehicle.nickname))
       void navigate('/admin/parc')
     } catch {
-      setConfirming(false)
+      // l'erreur est affichée dans le dialogue
     }
   }
 
   return (
     <Card>
-      <CardContent className="flex flex-col gap-3 pt-5">
-        {archiveVehicle.isError && <Alert variant="destructive">{errorMessage(archiveVehicle.error)}</Alert>}
-        {confirming ? (
-          <>
-            <p className="text-sm">{fr.fleet.archiveConfirm(vehicle.nickname)}</p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button variant="destructive" disabled={archiveVehicle.isPending} onClick={() => void archive()}>
-                {archiveVehicle.isPending ? fr.fleet.archiving : fr.fleet.archiveConfirmButton}
-              </Button>
-              <Button variant="outline" onClick={() => setConfirming(false)}>
-                {fr.fleet.cancel}
-              </Button>
-            </div>
-          </>
-        ) : (
-          <Button variant="outline" className="text-destructive sm:self-start" onClick={() => setConfirming(true)}>
-            {fr.fleet.archive}
-          </Button>
-        )}
+      <CardHeader>
+        <CardTitle className="text-base">{fr.fleet.archiveTitle}</CardTitle>
+        <CardDescription>{fr.fleet.archiveDescription}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="destructive-outline" className="w-full sm:w-auto" onClick={() => setConfirming(true)}>
+          {fr.fleet.archive}
+        </Button>
       </CardContent>
+      <ConfirmDialog
+        open={confirming}
+        title={fr.fleet.archive}
+        description={fr.fleet.archiveConfirm(vehicle.nickname)}
+        confirmLabel={archiveVehicle.isPending ? fr.fleet.archiving : fr.fleet.archiveConfirmButton}
+        cancelLabel={fr.fleet.cancel}
+        pending={archiveVehicle.isPending}
+        error={archiveVehicle.isError && <Alert variant="destructive">{errorMessage(archiveVehicle.error)}</Alert>}
+        onConfirm={() => void archive()}
+        onCancel={close}
+      />
     </Card>
   )
 }

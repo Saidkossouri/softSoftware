@@ -1,13 +1,19 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import type { Member, Role } from '@/api/client'
 import { useDeleteMember, useMember, useUpdateMember } from '@/api/members'
 import { applyApiErrors, errorMessage, FormAlert, FormField } from '@/components/FormErrors'
+import { Avatar } from '@/components/ListCard'
+import { BackLink } from '@/components/PageHeader'
 import { Alert } from '@/components/ui/alert'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/toast'
 import { fr } from '@/i18n/fr'
 import { lastLoginLabel } from './memberFormat'
 import { RoleSelect } from './RoleSelect'
@@ -20,13 +26,17 @@ export function MemberEditPage() {
   const member = useMember(memberId)
 
   return (
-    <div className="flex flex-col gap-4">
-      <Link to="/admin/membres" className={buttonVariants({ variant: 'ghost', className: 'self-start' })}>
-        ← {fr.members.back}
-      </Link>
-      {member.isPending && <p className="text-muted-foreground">{fr.loading}</p>}
+    <>
+      <BackLink to="/admin/membres">{fr.members.back}</BackLink>
+      {member.isPending && (
+        <div className="flex flex-col gap-4" aria-busy="true">
+          <p className="sr-only">{fr.loading}</p>
+          <Skeleton className="h-16" />
+          <Skeleton className="h-56" />
+        </div>
+      )}
       {member.isError && (
-        <Alert variant="destructive" className="flex flex-col items-start gap-3">
+        <Alert variant="destructive">
           {errorMessage(member.error)}
           <Button variant="outline" size="sm" onClick={() => void member.refetch()}>
             {fr.retry}
@@ -35,10 +45,26 @@ export function MemberEditPage() {
       )}
       {member.isSuccess && (
         <>
+          <MemberSummary member={member.data} />
           <EditMemberCard key={member.data.id} member={member.data} />
           <RemoveMemberCard member={member.data} />
         </>
       )}
+    </>
+  )
+}
+
+function MemberSummary({ member }: { member: Member }) {
+  return (
+    <div className="flex min-w-0 items-center gap-4">
+      <Avatar name={member.displayName ?? member.email} className="size-14 text-xl" />
+      <div className="min-w-0">
+        <h1 className="truncate text-2xl font-bold">{member.displayName ?? member.email}</h1>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <Badge variant={member.role === 'ADMIN' ? 'primary' : 'default'}>{fr.roles[member.role]}</Badge>
+          <span>{lastLoginLabel(member)}</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -46,7 +72,7 @@ export function MemberEditPage() {
 function EditMemberCard({ member }: { member: Member }) {
   const updateMember = useUpdateMember(member.id)
   const [generalError, setGeneralError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
+  const toast = useToast()
   const {
     register,
     handleSubmit,
@@ -61,10 +87,9 @@ function EditMemberCard({ member }: { member: Member }) {
 
   const onSubmit = handleSubmit(async (values) => {
     setGeneralError(null)
-    setSaved(false)
     try {
       await updateMember.mutateAsync({ displayName: values.displayName.trim(), role: values.role })
-      setSaved(true)
+      toast.success(fr.members.saved)
     } catch (error) {
       setGeneralError(
         applyApiErrors(error, setError, ['displayName', 'role'], { LAST_ADMIN: 'role' }),
@@ -77,7 +102,6 @@ function EditMemberCard({ member }: { member: Member }) {
       <CardHeader>
         <CardTitle className="truncate">{fr.members.editTitle}</CardTitle>
         <CardDescription className="truncate">{member.email}</CardDescription>
-        <CardDescription>{lastLoginLabel(member)}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
@@ -93,7 +117,6 @@ function EditMemberCard({ member }: { member: Member }) {
           </FormField>
           <RoleSelect id="role" error={errors.role?.message} register={register('role')} value={role} />
           <FormAlert message={generalError} />
-          {saved && <Alert role="status">{fr.members.saved}</Alert>}
           <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto sm:self-start">
             {isSubmitting ? fr.members.saving : fr.members.save}
           </Button>
@@ -106,39 +129,46 @@ function EditMemberCard({ member }: { member: Member }) {
 function RemoveMemberCard({ member }: { member: Member }) {
   const deleteMember = useDeleteMember(member.id)
   const navigate = useNavigate()
+  const toast = useToast()
   const [confirming, setConfirming] = useState(false)
+  const { reset } = deleteMember
+  const close = useCallback(() => {
+    setConfirming(false)
+    reset()
+  }, [reset])
 
   const remove = async () => {
     try {
       await deleteMember.mutateAsync()
+      toast.success(fr.members.removed(member.email))
       void navigate('/admin/membres')
     } catch {
-      setConfirming(false)
+      // l'erreur est affichée dans le dialogue
     }
   }
 
   return (
     <Card>
-      <CardContent className="flex flex-col gap-3 pt-5">
-        {deleteMember.isError && <Alert variant="destructive">{errorMessage(deleteMember.error)}</Alert>}
-        {confirming ? (
-          <>
-            <p className="text-sm">{fr.members.removeConfirm(member.email)}</p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button variant="destructive" disabled={deleteMember.isPending} onClick={() => void remove()}>
-                {deleteMember.isPending ? fr.members.removing : fr.members.removeConfirmButton}
-              </Button>
-              <Button variant="outline" onClick={() => setConfirming(false)}>
-                {fr.members.cancel}
-              </Button>
-            </div>
-          </>
-        ) : (
-          <Button variant="outline" className="text-destructive sm:self-start" onClick={() => setConfirming(true)}>
-            {fr.members.remove}
-          </Button>
-        )}
+      <CardHeader>
+        <CardTitle className="text-base">{fr.members.remove}</CardTitle>
+        <CardDescription>{fr.members.removeDescription}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="destructive-outline" className="w-full sm:w-auto" onClick={() => setConfirming(true)}>
+          {fr.members.remove}
+        </Button>
       </CardContent>
+      <ConfirmDialog
+        open={confirming}
+        title={fr.members.remove}
+        description={fr.members.removeConfirm(member.email)}
+        confirmLabel={deleteMember.isPending ? fr.members.removing : fr.members.removeConfirmButton}
+        cancelLabel={fr.members.cancel}
+        pending={deleteMember.isPending}
+        error={deleteMember.isError && <Alert variant="destructive">{errorMessage(deleteMember.error)}</Alert>}
+        onConfirm={() => void remove()}
+        onCancel={close}
+      />
     </Card>
   )
 }

@@ -13,9 +13,14 @@ COPY backend/member/build.gradle.kts backend/member/
 COPY backend/security/build.gradle.kts backend/security/
 COPY backend/vehicle/build.gradle.kts backend/vehicle/
 COPY backend/app/build.gradle.kts backend/app/
-RUN ./gradlew --no-daemon :backend:app:dependencies > /dev/null
+# Le répertoire Gradle (distribution, dépendances, cache de build) est un cache BuildKit
+# conservé d'un build à l'autre : un fichier de build modifié ne retélécharge que ce qui
+# manque, et les modules non modifiés ne sont pas recompilés (--build-cache).
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked \
+    ./gradlew --no-daemon :backend:app:dependencies > /dev/null
 COPY backend backend
-RUN ./gradlew --no-daemon :backend:app:bootJar
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked \
+    ./gradlew --no-daemon --build-cache :backend:app:bootJar
 
 FROM eclipse-temurin:21-jre-alpine
 RUN addgroup -S app && adduser -S app -G app
@@ -23,6 +28,7 @@ USER app
 WORKDIR /app
 COPY --from=build /app/backend/app/build/libs/carsupervision.jar app.jar
 EXPOSE 8080
-HEALTHCHECK --interval=10s --timeout=3s --start-period=60s --retries=5 \
+# Pendant le démarrage, vérification toutes les 2 s (le service est vu prêt plus tôt), puis toutes les 10 s.
+HEALTHCHECK --interval=10s --timeout=3s --start-period=60s --start-interval=2s --retries=5 \
   CMD wget -qO- http://localhost:8080/actuator/health > /dev/null || exit 1
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

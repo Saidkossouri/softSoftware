@@ -7,7 +7,10 @@ FROM node:24-alpine AS build
 WORKDIR /app
 COPY backend/api-contract/src/main/resources/openapi/openapi.yaml backend/api-contract/src/main/resources/openapi/openapi.yaml
 COPY frontend/package.json frontend/package-lock.json frontend/
-RUN cd frontend && npm ci --no-audit --no-fund
+# Cache npm conservé d'un build à l'autre (cache BuildKit) : un package-lock modifié ne
+# retélécharge que les paquets manquants.
+RUN --mount=type=cache,target=/root/.npm \
+    cd frontend && npm ci --no-audit --no-fund
 COPY frontend frontend
 RUN cd frontend && npm run build
 

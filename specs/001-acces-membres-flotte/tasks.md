@@ -242,12 +242,12 @@ seule.
 **Purpose**: livrable, documentation et vérifications finales.
 
 - [X] T084 Créer le `Dockerfile` multi-étapes à la racine : étape Node LTS (`npm ci`, `npm run build` dans `frontend/`), étape JDK 21 (`./gradlew bootJar` avec `frontend/dist` copié), image finale JRE 21 non root exposant 8080 ; ajouter `.dockerignore`
-- [ ] T085 [P] Test d'intégration `backend/app/src/test/java/fr/carsupervision/common/StaticAndDocsIT.java` : `/` et une route SPA (`/admin/parc`) servent `index.html` sans session, `/openapi.yaml` et `/swagger-ui/index.html` exigent une session, `/actuator/health` est public
-- [ ] T086 [P] Écrire le `README.md` à la racine (en français) : présentation, prérequis, création du client OAuth Google, variables d'environnement, lancement local et tests, renvoi vers `specs/001-acces-membres-flotte/quickstart.md`
-- [ ] T087 Vérifier que chaque méthode des contrôleurs ADMIN porte `@PreAuthorize("hasRole('ADMIN')")` et qu'aucun `@RequestMapping` n'existe hors des interfaces générées (revue de `backend/*/src/main/java/fr/carsupervision/`) ; corriger les écarts
-- [ ] T088 Vérifier l'affichage à 360 px de large de chaque écran (connexion, accès refusé, mes véhicules, détail, membres, édition membre, parc, formulaire véhicule) et corriger les débordements dans `frontend/src/`
-- [ ] T089 Dérouler les 16 scénarios de `specs/001-acces-membres-flotte/quickstart.md` et corriger les écarts constatés
-- [ ] T090 Vérifier que la CI `.github/workflows/ci.yml` passe sur la PR d'implémentation (génération OpenAPI, build, tests, image Docker)
+- [X] T085 [P] Test d'intégration `backend/app/src/test/java/fr/carsupervision/common/StaticAndDocsIT.java` : `/openapi.yaml` et `/swagger-ui/index.html` exigent une session, Swagger UI affiche le contrat, `/actuator/health` et `/access-denied.html` sont publics, le backend ne sert aucune route de la SPA (revu : depuis une image par brique, la SPA est servie par Vite ou nginx ; repli SPA mort retiré de `WebConfig`)
+- [X] T086 [P] Écrire le `README.md` à la racine (en français) : présentation, prérequis, création du client OAuth Google, variables d'environnement, lancement local et tests, renvoi vers `specs/001-acces-membres-flotte/quickstart.md`
+- [X] T087 Vérifier que chaque méthode des contrôleurs ADMIN porte `@PreAuthorize("hasRole('ADMIN')")` et qu'aucun `@RequestMapping` n'existe hors des interfaces générées (revue de `backend/*/src/main/java/fr/carsupervision/`) ; corriger les écarts
+- [X] T088 Vérifier l'affichage à 360 px de large de chaque écran (connexion, accès refusé, mes véhicules, détail, membres, édition membre, parc, formulaire véhicule) et corriger les débordements dans `frontend/src/` (fait : tuiles de l'accueil élargies par un long surnom, grilles en `grid-cols-1`)
+- [X] T089 Dérouler les 16 scénarios de `specs/001-acces-membres-flotte/quickstart.md` et corriger les écarts constatés (fait : chaque scénario est relié à ses tests automatiques ; restent manuels 2, 3 et 5, avec de vrais comptes Google)
+- [X] T090 Vérifier que la CI `.github/workflows/ci.yml` passe sur la PR d'implémentation (génération OpenAPI, build, tests, image Docker)
 
 ---
 

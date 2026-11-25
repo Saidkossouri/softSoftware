@@ -17,6 +17,10 @@ export type CurrentMileage = components['schemas']['CurrentMileage']
 export type MileageReading = components['schemas']['MileageReading']
 export type MileageReadingInput = components['schemas']['MileageReadingInput']
 export type MaintenanceTypeCategory = components['schemas']['MaintenanceTypeCategory']
+export type MaintenanceType = components['schemas']['MaintenanceType']
+export type TypeRef = components['schemas']['TypeRef']
+export type MaintenanceRecord = components['schemas']['MaintenanceRecord']
+export type MaintenanceRecordInput = components['schemas']['MaintenanceRecordInput']
 export type DueStatus = components['schemas']['DueStatus']
 
 /** Erreur de l'API au format Problem Details, avec le code stable du contrat. */

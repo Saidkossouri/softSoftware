@@ -1,4 +1,4 @@
-import { CarFront, Gauge, Pencil, Wrench } from 'lucide-react'
+import { CarFront, Gauge, Pencil, Plus, Wrench } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { ApiError } from '@/api/client'
@@ -128,11 +128,22 @@ export function VehicleDetailPage() {
           </Card>
 
           <Card>
-            <CardContent className="flex items-center gap-4 pt-5 sm:pt-6">
-              <IconTile className="bg-muted text-muted-foreground">
-                <Wrench />
-              </IconTile>
-              <p className="text-sm text-muted-foreground">{fr.vehicle.maintenanceSoon}</p>
+            <CardContent className="flex flex-col gap-4 pt-5 sm:flex-row sm:items-center sm:pt-6">
+              <div className="flex min-w-0 flex-1 items-center gap-4">
+                <IconTile className="bg-muted text-muted-foreground">
+                  <Wrench />
+                </IconTile>
+                <p className="text-sm text-muted-foreground">{fr.vehicle.maintenanceSoon}</p>
+              </div>
+              {vehicle.data.status === 'ACTIVE' && (
+                <Link
+                  to={`/vehicules/${vehicle.data.id}/entretiens/nouveau`}
+                  className={buttonVariants({ variant: 'outline', className: 'w-full sm:w-auto' })}
+                >
+                  <Plus aria-hidden />
+                  {fr.maintenance.add}
+                </Link>
+              )}
             </CardContent>
           </Card>
         </>

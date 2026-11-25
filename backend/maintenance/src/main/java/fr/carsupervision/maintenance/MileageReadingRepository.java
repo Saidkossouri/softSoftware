@@ -1,7 +1,6 @@
 package fr.carsupervision.maintenance;
 
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,9 +19,4 @@ public interface MileageReadingRepository extends JpaRepository<MileageReading, 
 
     @Query("select min(r.mileageKm) from MileageReading r where r.vehicleId = :vehicleId")
     Integer findLowestMileage(UUID vehicleId);
-
-    default OptionalInt lowestMileage(UUID vehicleId) {
-        Integer lowest = findLowestMileage(vehicleId);
-        return lowest == null ? OptionalInt.empty() : OptionalInt.of(lowest);
-    }
 }

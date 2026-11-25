@@ -6,6 +6,8 @@ import { RequireAdmin } from '@/auth/RequireAdmin'
 import { RequireAuth } from '@/auth/RequireAuth'
 import { AppLayout } from '@/components/AppLayout'
 import { Toaster } from '@/components/ui/toast'
+import { MaintenanceRecordFormPage } from '@/pages/MaintenanceRecordFormPage'
+import { MaintenanceRecordPage } from '@/pages/MaintenanceRecordPage'
 import { VehicleDetailPage } from '@/pages/VehicleDetailPage'
 import { VehiclesPage } from '@/pages/VehiclesPage'
 import { MemberEditPage } from '@/pages/admin/MemberEditPage'
@@ -25,6 +27,9 @@ export function App() {
               <Route element={<AppLayout />}>
                 <Route index element={<VehiclesPage />} />
                 <Route path="vehicules/:vehicleId" element={<VehicleDetailPage />} />
+                <Route path="vehicules/:vehicleId/entretiens/nouveau" element={<MaintenanceRecordFormPage />} />
+                <Route path="entretiens/:recordId" element={<MaintenanceRecordPage />} />
+                <Route path="entretiens/:recordId/modifier" element={<MaintenanceRecordFormPage />} />
                 <Route path="admin" element={<RequireAdmin />}>
                   <Route path="membres" element={<MembersPage />} />
                   <Route path="membres/:memberId" element={<MemberEditPage />} />

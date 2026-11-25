@@ -1,6 +1,8 @@
 package fr.carsupervision.support;
 
 import fr.carsupervision.member.InitialAdminInitializerAccess;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -49,10 +51,35 @@ public abstract class IntegrationTestBase {
     @Autowired
     private InitialAdminInitializerAccess initialAdmin;
 
+    /** Catalogue des types tel que pré-rempli par Liquibase, relu une fois (research R9). */
+    private static List<Map<String, Object>> initialCatalogue;
+
     @BeforeEach
     void resetDatabase() {
         clock.reset();
-        jdbc.execute("TRUNCATE mileage_reading, vehicle_access, vehicle, member, spring_session CASCADE");
+        jdbc.execute("TRUNCATE maintenance_record_type, maintenance_record, mileage_reading, vehicle_access, vehicle,"
+                + " member, spring_session CASCADE");
+        resetCatalogue();
         initialAdmin.run();
+    }
+
+    /** Le catalogue n'est jamais vidé : types ajoutés supprimés, types pré-remplis restaurés. */
+    private void resetCatalogue() {
+        if (initialCatalogue == null) {
+            initialCatalogue = jdbc.queryForList("SELECT * FROM maintenance_type");
+        }
+        List<Object> ids = initialCatalogue.stream().map(row -> row.get("id")).toList();
+        jdbc.update("DELETE FROM maintenance_type WHERE id <> ALL (?)",
+                (Object) ids.toArray(new java.util.UUID[0]));
+        for (Map<String, Object> row : initialCatalogue) {
+            jdbc.update("""
+                    UPDATE maintenance_type SET name = ?, name_key = ?, default_interval_km = ?,
+                      default_interval_months = ?, requires_description = ?, suggest_from_age_years = ?,
+                      display_order = ?, active = ?, updated_at = ? WHERE id = ?""",
+                    row.get("name"), row.get("name_key"), row.get("default_interval_km"),
+                    row.get("default_interval_months"), row.get("requires_description"),
+                    row.get("suggest_from_age_years"), row.get("display_order"), row.get("active"),
+                    row.get("updated_at"), row.get("id"));
+        }
     }
 }

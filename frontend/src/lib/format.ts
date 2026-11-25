@@ -43,3 +43,17 @@ export function todayIso(now: Date = new Date()): string {
   const day = String(now.getDate()).padStart(2, '0')
   return `${now.getFullYear()}-${month}-${day}`
 }
+
+const sizeFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
+
+/** Taille de fichier : « 850 o », « 120 Ko », « 2,4 Mo » (unités françaises). */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes}\u00a0o`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}\u00a0Ko`
+  return `${sizeFormat.format(bytes / (1024 * 1024))}\u00a0Mo`
+}
+
+/** Date d'un instant du contrat (« 2026-11-24T22:30:00Z ») dans le fuseau de l'appareil : « 24/11/2026 ». */
+export function formatInstantDate(isoInstant: string): string {
+  return new Date(isoInstant).toLocaleDateString('fr-FR')
+}

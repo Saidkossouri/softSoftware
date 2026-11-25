@@ -1,5 +1,8 @@
 app:
   initial-admin-email: "  Said@Example.com "
+  documents:
+    # Justificatifs des tests hors du dépôt ; DocumentsIT lit et vérifie ce dossier.
+    storage-dir: ${java.io.tmpdir}/carsupervision-test-documents
 spring:
   security:
     oauth2:

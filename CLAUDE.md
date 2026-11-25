@@ -78,9 +78,13 @@ Sous Windows, remplacer `./gradlew` par `.\gradlew.bat`.
 - `backend/schedule/` : règles d'échéance, échéances à date fixe, suggestions et rappels
   (`ScheduleController`, calcul pur `DueDateCalculator`, jamais stocké ; lit les entretiens via
   `MaintenanceQueries`).
-- `backend/document/` : justificatifs (002, à venir).
+- `backend/document/` : justificatifs (PDF, JPEG, PNG, WebP, 10 Mo, 10 par entretien) ;
+  `DocumentService`, stockage derrière `DocumentStorage` (`LocalDocumentStorage`, dossier
+  `app.documents.storage-dir`), type reconnu par signature (`FileSignature`), effacement
+  des fichiers après validation (`AfterCommit`) ; `RecordDocuments` répond au port
+  `RecordDocumentCounter` et à l'événement `MaintenanceRecordDeleted` de `maintenance`.
 - `backend/app/` : point d'entrée, `application.yaml`, changelog maître ; ses tests
   (`src/test/java/`) sont les tests d'intégration `*IT` de l'application assemblée. Les tests
   unitaires `*Test` restent dans leur module.
-- `frontend/src/` : `api/client.ts` (client typé), `auth/`, `pages/`, `components/ui/`
+- `frontend/src/` : `api/client.ts` (client typé ; envoi de fichier dans `api/documents.ts`), `auth/`, `pages/`, `components/ui/`
   (shadcn/ui), `i18n/fr.ts`.

@@ -1,4 +1,4 @@
-// Le déployable unique : assemble les modules, porte la configuration, Liquibase et le frontend.
+// Le déployable unique : assemble les modules, porte la configuration, Liquibase et les tests d'intégration.
 plugins {
     id("carsupervision.java-module")
     id("org.springframework.boot")

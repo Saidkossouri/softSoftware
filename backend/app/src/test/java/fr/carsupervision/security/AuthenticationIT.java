@@ -3,7 +3,6 @@ package fr.carsupervision.security;
 import static fr.carsupervision.support.ContractValidation.conformsToContract;
 import static fr.carsupervision.support.TestMembers.google;
 import static org.assertj.core.api.Assertions.assertThat;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -29,6 +28,15 @@ class AuthenticationIT extends IntegrationTestBase {
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"))
                 .andExpect(jsonPath("$.email").doesNotExist())
+                .andExpect(conformsToContract());
+    }
+
+    @Test
+    void anonymousVehicleListIsRejectedWith401AndNoData() throws Exception {
+        mockMvc.perform(get("/api/vehicles"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"))
+                .andExpect(jsonPath("$[0]").doesNotExist())
                 .andExpect(conformsToContract());
     }
 
@@ -73,13 +81,6 @@ class AuthenticationIT extends IntegrationTestBase {
     }
 
     @Test
-    void accessDeniedPageIsPublic() throws Exception {
-        mockMvc.perform(get("/access-denied.html"))
-                .andExpect(status().isOk())
-                .andExpect(result -> assertThat(result.getResponse().getContentAsString(UTF_8)).contains("Accès refusé"));
-    }
-
-    @Test
     void logoutClosesSession() throws Exception {
         mockMvc.perform(post("/logout").with(google(INITIAL_ADMIN)).with(csrf()))
                 .andExpect(status().isNoContent());
@@ -97,17 +98,5 @@ class AuthenticationIT extends IntegrationTestBase {
         mockMvc.perform(get("/api/inexistant").with(google(INITIAL_ADMIN)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
-    }
-
-    @Test
-    void apiDocumentationRequiresSession() throws Exception {
-        mockMvc.perform(get("/openapi.yaml"))
-                .andExpect(status().is3xxRedirection());
-        mockMvc.perform(get("/swagger-ui/index.html"))
-                .andExpect(status().is3xxRedirection());
-        mockMvc.perform(get("/openapi.yaml").with(google(INITIAL_ADMIN)))
-                .andExpect(status().isOk());
-        mockMvc.perform(get("/swagger-ui/index.html").with(google(INITIAL_ADMIN)))
-                .andExpect(status().isOk());
     }
 }

@@ -25,10 +25,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    static final String[] PUBLIC_PATHS = {
-        "/", "/index.html", "/assets/**", "/favicon.ico", "/favicon.svg",
-        "/access-denied.html", "/actuator/health", "/error"
-    };
+    static final String[] PUBLIC_PATHS = {"/", "/access-denied.html", "/actuator/health", "/error"};
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, MemberRepository memberRepository,
@@ -54,7 +51,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_PATHS).permitAll()
                 .requestMatchers(ProtectedPaths.PATTERNS).authenticated()
-                // Routes de la SPA, points d'entrée OAuth2 : la coquille ne contient aucune donnée.
+                // Points d'entrée OAuth2 et pages publiques : aucune donnée sans session.
                 .anyRequest().permitAll())
             .oauth2Login(oauth -> oauth
                 .loginPage("/")

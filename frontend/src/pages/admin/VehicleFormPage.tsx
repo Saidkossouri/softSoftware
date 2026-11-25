@@ -175,7 +175,7 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
               {...register('nickname', text50)}
             />
           </FormField>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField id="make" label={fr.fleet.make} error={errors.make?.message}>
               <Input
                 id="make"
@@ -214,7 +214,7 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
               })}
             />
           </FormField>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField id="initialMileageKm" label={fr.fleet.initialMileageKm} error={errors.initialMileageKm?.message}>
               <Input
                 id="initialMileageKm"

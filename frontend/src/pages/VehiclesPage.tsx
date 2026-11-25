@@ -67,7 +67,7 @@ export function VehiclesPage() {
           </Card>
         )}
         {vehicles.isSuccess && vehicles.data.length > 0 && (
-          <ul className="grid gap-3 sm:grid-cols-2" aria-label={isAdmin ? fr.home.fleetVehicles : fr.home.myVehicles}>
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-label={isAdmin ? fr.home.fleetVehicles : fr.home.myVehicles}>
             {vehicles.data.map((vehicle) => (
               <li key={vehicle.id}>
                 <VehicleTile vehicle={vehicle} />
@@ -80,7 +80,7 @@ export function VehiclesPage() {
       {isAdmin && (
         <section className="flex flex-col gap-3">
           <SectionLabel>{fr.home.shortcuts}</SectionLabel>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Shortcut to="/admin/parc" icon={Car} title={fr.fleet.title} description={fr.home.fleetShortcut} />
             <Shortcut to="/admin/membres" icon={Users} title={fr.members.title} description={fr.home.membersShortcut} />
           </div>

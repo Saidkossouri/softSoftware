@@ -101,7 +101,12 @@ service concerné (`--build`).
 ```bash
 ./gradlew test                       # backend : intégration (Testcontainers) et conformité au contrat
 cd frontend && npm test -- --run     # frontend : tests de composants
+cd frontend && npm run lint          # frontend : lint
 ```
+
+Pour valider la fonctionnalité de bout en bout (16 scénarios, avec les tests automatiques qui
+couvrent chacun d'eux), suivre
+[`specs/001-acces-membres-flotte/quickstart.md`](specs/001-acces-membres-flotte/quickstart.md).
 
 ### Arrêter
 
@@ -122,6 +127,8 @@ de la base sont conservées dans un volume Docker ; `docker compose down -v` les
 
 - Constitution du projet : `.specify/memory/constitution.md`
 - Spécifications par fonctionnalité : `specs/` (spec, plan, contrat, quickstart de validation)
+- Validation de la fonctionnalité 001 (accès, membres, parc, attributions) :
+  [`specs/001-acces-membres-flotte/quickstart.md`](specs/001-acces-membres-flotte/quickstart.md)
 - Contrat d'API : `backend/api-contract/src/main/resources/openapi/openapi.yaml`, servi par Swagger UI sur
   `/swagger-ui/index.html` une fois connecté
 - Guide de travail pour Claude : `CLAUDE.md`

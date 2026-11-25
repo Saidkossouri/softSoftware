@@ -87,7 +87,7 @@ export function VehicleDetailPage() {
           <Card>
             <CardContent className="flex flex-col gap-4 pt-5 sm:pt-6">
               <SectionLabel>{fr.vehicle.sectionDetails}</SectionLabel>
-              <dl className="grid gap-4 sm:grid-cols-2">
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Detail label={fr.vehicle.registration}>
                   <Plate registration={vehicle.data.registration} />
                 </Detail>

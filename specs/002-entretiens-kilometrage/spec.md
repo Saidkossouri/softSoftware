@@ -146,6 +146,11 @@ et vérifier que l'échéance repart.
    2028.
 7. **Given** un USER sans accès au véhicule B, **When** il ouvre l'accueil, **Then** aucune
    échéance de B n'apparaît, et toute demande directe sur les échéances de B est refusée (403).
+8. **Given** un véhicule actif dont le dernier kilométrage connu date de plus de 30 jours,
+   **When** un membre ayant accès à ce véhicule ouvre l'accueil, **Then** il voit un rappel
+   « Pense à relever le kilométrage » pour ce véhicule, avec la date et la valeur du dernier
+   relevé et un accès direct à la saisie ; le rappel disparaît dès qu'un relevé ou un entretien
+   plus récent est enregistré.
 
 ---
 
@@ -213,7 +218,8 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
 - Véhicule peu roulé : une règle « 15 000 km ou 12 mois » arrive à échéance par la date même si
   le kilométrage est loin d'être atteint.
 - Aucun relevé récent : l'état d'une échéance au kilométrage se fonde sur le dernier
-  kilométrage connu, dont la date est affichée pour que le membre sache s'il doit en saisir un.
+  kilométrage connu, dont la date est affichée pour que le membre sache s'il doit en saisir un ;
+  au-delà de 30 jours sans relevé, l'accueil invite à en saisir un (FR-035).
 - Photo très lourde prise par un téléphone récent : au-delà de 10 Mo, refus avec un message
   clair (pas de troncature silencieuse).
 - Envoi d'un justificatif interrompu : rien n'est rattaché à l'entretien et le membre peut
@@ -318,6 +324,11 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
 - **FR-028**: L'accueil DOIT afficher, pour l'ensemble des véhicules actifs auxquels le membre a
   accès, les échéances « En retard » et « Bientôt », avec un indicateur visible dès l'ouverture
   de l'application ; les véhicules archivés n'y figurent pas.
+- **FR-035**: L'accueil DOIT afficher, pour chaque véhicule actif auquel le membre a accès et
+  dont le dernier kilométrage connu (relevé, entretien, ou à défaut kilométrage de départ) date
+  de plus de 30 jours, un rappel invitant à relever le kilométrage, avec la date et la valeur du
+  dernier kilométrage connu et un accès direct à la saisie d'un relevé. Ce rappel DOIT
+  disparaître dès qu'un kilométrage plus récent est enregistré.
 
 **Justificatifs**
 
@@ -387,6 +398,9 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
   45 secondes depuis un téléphone.
 - **SC-010**: 100 % des demandes de justificatif d'un véhicule non autorisé sont refusées, y
   compris avec l'adresse directe du fichier.
+- **SC-011**: 100 % des véhicules actifs sans kilométrage depuis plus de 30 jours affichent le
+  rappel de relevé sur l'accueil des membres qui y ont accès, et aucun véhicule relevé dans les
+  30 derniers jours ne l'affiche.
 
 ## Assumptions
 
@@ -396,6 +410,9 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
 - Les rappels sont affichés dans l'application (accueil, fiche véhicule) ; aucun email ni
   notification push n'est envoyé dans cette fonctionnalité. Un rappel par email pourra être
   ajouté ensuite s'il manque à l'usage.
+- Le kilométrage n'est connu que par les saisies des membres (aucun GPS ni boîtier connecté) ;
+  le rappel de relevé à 30 jours (ajouté à la demande du mainteneur le 2026-11-25) limite le
+  risque d'un kilométrage périmé.
 - L'état « Bientôt » se fonde sur le dernier kilométrage connu ; il n'y a pas d'estimation du
   kilométrage futur à partir du rythme de roulage.
 - La liste des opérations et leurs intervalles par défaut sont fixes. Leur gestion par l'ADMIN

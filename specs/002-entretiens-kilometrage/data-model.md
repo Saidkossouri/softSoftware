@@ -12,10 +12,11 @@ Identifiants `uuid` générés par l'application, dates d'audit en `timestamptz`
 ```text
 member 1 ──< mileage_reading >── 1 vehicle 1 ──< maintenance_record >── 1 member
                                      │                │
-                                     │                ├──< maintenance_record_operation
+                                     │                ├──< maintenance_record_type >── 1 maintenance_type
                                      │                └──< document >── 1 member
-                                     ├──< maintenance_rule
-                                     └──< deadline
+                                     ├──< maintenance_rule >──────────── 1 maintenance_type
+                                     ├──< deadline >──────────────────── 0..1 maintenance_type
+                                     └──< deadline_suggestion_dismissal >── 1 maintenance_type
 ```
 
 ## Modifications de `vehicle` (module `vehicle`, changeset `005-add-vehicle-current-mileage`)
@@ -45,7 +46,47 @@ aucune saisie, le kilométrage actuel suit.
 
 Index : `(vehicle_id, reading_date)`.
 
-## `maintenance_record` (module `maintenance`, changeset `007-create-maintenance-record`)
+## `maintenance_type` (module `maintenance`, changeset `007-create-maintenance-type`)
+
+Catalogue géré par l'ADMIN (US6, FR-036 à FR-040).
+
+| Colonne | Type | Règle |
+|---|---|---|
+| `id` | uuid | clé primaire ; identifiants fixes pour les types pré-remplis |
+| `name` | varchar(60), non nul | espaces retirés aux extrémités, non vide |
+| `name_key` | varchar(60), non nul, unique | nom en minuscules, espaces internes réduits (409 `TYPE_NAME_ALREADY_EXISTS`) |
+| `category` | varchar(15), non nul | `CHECK IN ('MAINTENANCE','ADMINISTRATIVE')` ; non modifiable |
+| `default_interval_km` | integer | 1 à 1 000 000 ; `MAINTENANCE` seulement (`CHECK`) |
+| `default_interval_months` | smallint | 1 à 240 |
+| `requires_description` | boolean, non nul, défaut faux | vrai seulement pour `MAINTENANCE` (`CHECK`) |
+| `suggest_from_age_years` | smallint | 0 à 50 ; `ADMINISTRATIVE` seulement (`CHECK`) |
+| `display_order` | smallint, non nul | ordre dans la catégorie |
+| `active` | boolean, non nul, défaut vrai | |
+| `created_at`, `updated_at` | timestamptz, non nul | |
+
+Données initiales, insérées par le même changeset (valeurs indicatives pour le Maroc, voir
+[spec, Assumptions](./spec.md)) :
+
+| Ordre | Nom | Catégorie | km | mois | Autre |
+|---|---|---|---|---|---|
+| 1 | Vidange | MAINTENANCE | 10 000 | 12 | |
+| 2 | Filtre à huile | MAINTENANCE | 10 000 | 12 | |
+| 3 | Filtre à air | MAINTENANCE | 20 000 | 24 | |
+| 4 | Filtre d'habitacle | MAINTENANCE | 15 000 | 12 | |
+| 5 | Filtre à carburant | MAINTENANCE | 40 000 | 24 | |
+| 6 | Révision | MAINTENANCE | 20 000 | 12 | |
+| 7 | Pneus | MAINTENANCE | 40 000 | | |
+| 8 | Freins | MAINTENANCE | 30 000 | | |
+| 9 | Distribution | MAINTENANCE | 80 000 | 60 | |
+| 10 | Batterie | MAINTENANCE | | 48 | |
+| 11 | Climatisation | MAINTENANCE | | 24 | |
+| 12 | Réparation | MAINTENANCE | | | |
+| 13 | Autre | MAINTENANCE | | | description obligatoire |
+| 1 | Assurance | ADMINISTRATIVE | | 12 | suggérée dès 0 an |
+| 2 | Vignette | ADMINISTRATIVE | | 12 | suggérée dès 0 an |
+| 3 | Visite technique | ADMINISTRATIVE | | 12 | suggérée dès 5 ans |
+
+## `maintenance_record` (module `maintenance`, changeset `008-create-maintenance-record`)
 
 | Colonne | Type | Règle |
 |---|---|---|
@@ -53,7 +94,7 @@ Index : `(vehicle_id, reading_date)`.
 | `vehicle_id` | uuid, non nul | FK `vehicle`, `ON DELETE CASCADE` |
 | `record_date` | date, non nul | ≤ aujourd'hui |
 | `mileage_km` | integer, non nul | ≥ 0 ; mêmes règles de cohérence que les relevés |
-| `other_description` | varchar(200) | obligatoire si l'opération `OTHER` est présente |
+| `description` | varchar(200) | obligatoire si l'un des types a `requires_description` |
 | `cost_cents` | integer | facultatif, `CHECK (cost_cents >= 0)` |
 | `garage` | varchar(100) | facultatif, texte libre (« Moi-même » possible) |
 | `notes` | varchar(2000) | facultatif |
@@ -63,30 +104,31 @@ Index : `(vehicle_id, reading_date)`.
 
 Index : `(vehicle_id, record_date)`.
 
-### `maintenance_record_operation`
+### `maintenance_record_type`
 
 | Colonne | Type | Règle |
 |---|---|---|
 | `record_id` | uuid, non nul | FK `maintenance_record`, `ON DELETE CASCADE` |
-| `operation` | varchar(30), non nul | `CHECK` sur les 14 codes de `OperationType` |
+| `type_id` | uuid, non nul | FK `maintenance_type` ; type `MAINTENANCE` actif à la saisie (contrôle du service) |
 
-Clé primaire `(record_id, operation)` (une opération au plus une fois par entretien) ; index
-`(operation)` pour le filtre de l'historique et la dernière réalisation d'une règle.
+Clé primaire `(record_id, type_id)` (un type au plus une fois par entretien) ; index
+`(type_id)` pour le filtre de l'historique et la dernière réalisation d'une règle. Un type
+désactivé plus tard reste lié et affiché.
 
-## `maintenance_rule` (module `schedule`, changeset `008-create-schedule`)
+## `maintenance_rule` (module `schedule`, changeset `009-create-schedule`)
 
 | Colonne | Type | Règle |
 |---|---|---|
 | `id` | uuid | clé primaire |
 | `vehicle_id` | uuid, non nul | FK `vehicle`, `ON DELETE CASCADE` |
-| `operation` | varchar(30), non nul | code `OperationType` ; non modifiable après création |
+| `type_id` | uuid, non nul | FK `maintenance_type` ; type `MAINTENANCE` actif à la création ; non modifiable |
 | `interval_km` | integer | 1 à 1 000 000 |
 | `interval_months` | smallint | 1 à 240 |
 | `baseline_date` | date, non nul | ≤ aujourd'hui ; par défaut aujourd'hui |
 | `baseline_mileage_km` | integer, non nul | ≥ 0 ; par défaut le kilométrage actuel |
 | `created_at`, `updated_at` | timestamptz, non nul | |
 
-Contraintes : `UNIQUE (vehicle_id, operation)` (409 `RULE_ALREADY_EXISTS`) ;
+Contraintes : `UNIQUE (vehicle_id, type_id)` (409 `RULE_ALREADY_EXISTS`) ;
 `CHECK (interval_km IS NOT NULL OR interval_months IS NOT NULL)`.
 
 ## `deadline` (module `schedule`, même changeset)
@@ -95,7 +137,8 @@ Contraintes : `UNIQUE (vehicle_id, operation)` (409 `RULE_ALREADY_EXISTS`) ;
 |---|---|---|
 | `id` | uuid | clé primaire |
 | `vehicle_id` | uuid, non nul | FK `vehicle`, `ON DELETE CASCADE` |
-| `label` | varchar(60), non nul | non vide après suppression des espaces |
+| `type_id` | uuid | FK `maintenance_type`, facultatif ; type `ADMINISTRATIVE` actif à la saisie |
+| `label` | varchar(60), non nul | non vide ; nom du type si non fourni |
 | `due_date` | date, non nul | peut être passée (saisie d'une échéance déjà en retard) |
 | `recurrence_months` | smallint | 1 à 120 ; absent = échéance unique |
 | `done_at` | timestamptz | nul tant que l'échéance est à faire |
@@ -107,7 +150,18 @@ Transition : `à faire → faite` par `POST /deadlines/{id}/complete` (idempoten
 pas à « à faire » (on la supprime ou on en crée une nouvelle) ; seules les échéances à faire
 apparaissent dans les échéances calculées.
 
-## `document` (module `document`, changeset `009-create-document`)
+## `deadline_suggestion_dismissal` (module `schedule`, même changeset)
+
+| Colonne | Type | Règle |
+|---|---|---|
+| `vehicle_id` | uuid, non nul | FK `vehicle`, `ON DELETE CASCADE` |
+| `type_id` | uuid, non nul | FK `maintenance_type` |
+| `created_at` | timestamptz, non nul | |
+
+Clé primaire `(vehicle_id, type_id)`. Une suggestion ignorée ne revient pas pour ce véhicule
+(FR-040) ; créer ensuite une échéance de ce type reste possible.
+
+## `document` (module `document`, changeset `010-create-document`)
 
 | Colonne | Type | Règle |
 |---|---|---|
@@ -132,6 +186,7 @@ véhicule).
 | Kilométrage actuel | point le plus récent (date puis km) parmi relevés et entretiens, sinon kilométrage de départ | `Vehicle.currentMileage`, réponses d'écriture |
 | Totaux de dépenses | somme de `cost_cents` sur l'année civile en cours (Paris) et sur tout l'historique | `VehicleHistory.costTotals` |
 | Échéance d'une règle | [research R10](./research.md) | `DueItem` |
+| Suggestions d'échéances | types `ADMINISTRATIVE` actifs avec `suggest_from_age_years ≤ année − first_registration_year` (ou = 0 sans année), sans échéance à faire de ce type, non ignorés | `GET /vehicles/{id}/deadline-suggestions` |
 | Rappel de relevé | véhicule actif dont `current_mileage_date < aujourd'hui − 30 jours` | `Reminders.mileageReadings` |
 | `canEdit` / `canDelete` | membre connecté auteur, ou ADMIN | réponses de lecture |
 
@@ -139,22 +194,25 @@ véhicule).
 
 | Cas | Réponse |
 |---|---|
-| Champ manquant, hors bornes, date future, `OTHER` sans description, aucune opération, règle sans intervalle | 400 `VALIDATION_ERROR`, un message par champ |
+| Champ manquant, hors bornes, date future, description manquante, aucun type, type désactivé ou de la mauvaise catégorie, règle sans intervalle, champ de catalogue incompatible avec la catégorie | 400 `VALIDATION_ERROR`, un message par champ |
+| Modification du catalogue par un USER, ou `includeInactive` demandé par un USER | 403 `ADMIN_ONLY` |
+| Nom de type déjà présent (casse ignorée) | 409 `TYPE_NAME_ALREADY_EXISTS` |
 | Véhicule non accessible (ou ressource inexistante pour un USER) | 403 `VEHICLE_FORBIDDEN` |
 | Modification ou suppression par un autre que l'auteur, hors ADMIN | 403 `NOT_AUTHOR` |
 | Écriture sur un véhicule archivé | 409 `VEHICLE_ARCHIVED` |
 | Kilométrage incohérent | 409 `MILEAGE_INCONSISTENT` (message citant le point bloquant) |
 | Écart > 100 000 km non confirmé | 409 `MILEAGE_JUMP_NOT_CONFIRMED` |
 | Kilométrage de départ supérieur au plus petit kilométrage saisi | 409 `INITIAL_MILEAGE_ABOVE_RECORDS` |
-| Deuxième règle pour la même opération | 409 `RULE_ALREADY_EXISTS` |
+| Deuxième règle pour le même type | 409 `RULE_ALREADY_EXISTS` |
 | Fichier > 10 Mo | 413 `DOCUMENT_TOO_LARGE` |
 | Format non accepté | 415 `DOCUMENT_TYPE_NOT_ALLOWED` |
 | Onzième justificatif | 409 `DOCUMENT_LIMIT_REACHED` |
 
 ## Suppressions en cascade
 
-- Entretien supprimé → ses opérations (FK), puis ses justificatifs : lignes dans la même
+- Entretien supprimé → ses liens de types (FK), puis ses justificatifs : lignes dans la même
   transaction, fichiers après validation ([R2](./research.md)). Le kilométrage actuel et les
   échéances sont recalculés (ces dernières à la lecture suivante).
 - Membre supprimé (fonctionnalité 001) → `author_id` mis à nul, `author_name` conservé.
+- Type d'entretien : jamais supprimé (désactivation) ; les FK vers `maintenance_type` sont sans cascade.
 - Véhicule : jamais supprimé (archivage) ; les `ON DELETE CASCADE` ne servent qu'en test.

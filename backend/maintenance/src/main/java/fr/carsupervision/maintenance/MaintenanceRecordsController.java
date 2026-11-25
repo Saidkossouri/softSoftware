@@ -3,22 +3,26 @@ package fr.carsupervision.maintenance;
 import fr.carsupervision.api.MaintenanceApi;
 import fr.carsupervision.api.model.MaintenanceRecordInput;
 import fr.carsupervision.api.model.VehicleHistory;
-import fr.carsupervision.common.error.ApiException;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Entretiens réalisés : droits et validation dans {@link MaintenanceRecordService}. */
+/** Entretiens réalisés et historique du véhicule : droits et validation dans les services. */
 @RestController
 public class MaintenanceRecordsController implements MaintenanceApi {
 
     private final MaintenanceRecordService recordService;
     private final MaintenanceRecordMapper recordMapper;
+    private final VehicleHistoryService historyService;
+    private final VehicleHistoryMapper historyMapper;
 
-    public MaintenanceRecordsController(MaintenanceRecordService recordService, MaintenanceRecordMapper recordMapper) {
+    public MaintenanceRecordsController(MaintenanceRecordService recordService, MaintenanceRecordMapper recordMapper,
+            VehicleHistoryService historyService, VehicleHistoryMapper historyMapper) {
         this.recordService = recordService;
         this.recordMapper = recordMapper;
+        this.historyService = historyService;
+        this.historyMapper = historyMapper;
     }
 
     @Override
@@ -45,9 +49,10 @@ public class MaintenanceRecordsController implements MaintenanceApi {
         return ResponseEntity.noContent().build();
     }
 
-    /** Historique du véhicule : US3. D'ici là, comme une route absente (404). */
+    /** Historique du véhicule (US3) : le contrat le range sous le tag maintenance, d'où ce contrôleur. */
     @Override
     public ResponseEntity<VehicleHistory> getVehicleHistory(UUID vehicleId, UUID typeId, Boolean recordsOnly) {
-        throw ApiException.notFound("L'historique n'est pas encore disponible.");
+        return ResponseEntity.ok(historyMapper.toDto(
+                historyService.get(vehicleId, typeId, Boolean.TRUE.equals(recordsOnly))));
     }
 }

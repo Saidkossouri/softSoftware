@@ -1,6 +1,8 @@
 package fr.carsupervision.common;
 
 import static fr.carsupervision.support.TestMembers.google;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -59,7 +61,9 @@ class StaticAndDocsIT extends IntegrationTestBase {
         mockMvc.perform(get("/access-denied.html"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("text/html"))
-                .andExpect(content().string(containsString("Accès refusé")));
+                // Lecture en UTF-8 : MockMvc décode sinon le corps en ISO-8859-1.
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString(UTF_8))
+                        .contains("Accès refusé"));
     }
 
     @Test

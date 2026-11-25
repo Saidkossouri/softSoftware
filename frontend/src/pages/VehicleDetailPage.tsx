@@ -1,9 +1,11 @@
-import { CarFront, Gauge, Paperclip, Pencil, Plus, Wrench } from 'lucide-react'
+import { CalendarClock, CarFront, ChevronRight, Gauge, Paperclip, Pencil, Plus, Wrench } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { ApiError, type HistoryEntry, type Vehicle, type VehicleHistory } from '@/api/client'
 import { useVehicleHistory } from '@/api/history'
 import { useMaintenanceTypes } from '@/api/maintenance'
+import { useDueItems } from '@/api/schedule'
+import { DueItemCard } from '@/components/DueItemCard'
 import { useVehicle } from '@/api/vehicles'
 import { useAuth } from '@/auth/AuthContext'
 import { errorMessage } from '@/components/FormErrors'
@@ -112,7 +114,7 @@ export function VehicleDetailPage() {
           </div>
           {recording && <MileageReadingDialog vehicle={vehicle.data} onClose={() => setRecording(false)} />}
 
-          <HistorySection vehicle={vehicle.data} />
+          <HistorySection vehicle={vehicle.data} middle={<DueSection vehicle={vehicle.data} />} />
 
           <Card>
             <CardContent className="flex flex-col gap-4 pt-5 sm:pt-6">
@@ -159,7 +161,7 @@ function NotSet() {
 type View = 'ALL' | 'RECORDS'
 
 /** Kilométrage actuel, totaux de dépenses et historique filtrable (US3). */
-function HistorySection({ vehicle }: { vehicle: Vehicle }) {
+function HistorySection({ vehicle, middle }: { vehicle: Vehicle; middle: ReactNode }) {
   const [view, setView] = useState<View>('ALL')
   const [typeId, setTypeId] = useState('')
   const filtered = view === 'RECORDS' || typeId !== ''
@@ -195,6 +197,7 @@ function HistorySection({ vehicle }: { vehicle: Vehicle }) {
   return (
     <>
       <Summary history={data} />
+      {middle}
       <section className="flex flex-col gap-3" aria-labelledby="history-title">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <SectionLabel id="history-title">{fr.history.title}</SectionLabel>
@@ -249,6 +252,68 @@ function HistorySection({ vehicle }: { vehicle: Vehicle }) {
         )}
       </section>
     </>
+  )
+}
+
+/** Échéances du véhicule, en retard d'abord (US4, FR-027), et accès au plan d'entretien. */
+function DueSection({ vehicle }: { vehicle: Vehicle }) {
+  const dueItems = useDueItems(vehicle.id)
+  const planLink = vehicle.status === 'ACTIVE' && (
+    <Link
+      to={`/vehicules/${vehicle.id}/plan`}
+      className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'self-start sm:self-auto' })}
+    >
+      {fr.schedule.managePlan}
+      <ChevronRight aria-hidden />
+    </Link>
+  )
+
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="due-title">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <SectionLabel id="due-title">{fr.schedule.title}</SectionLabel>
+        {dueItems.isSuccess && dueItems.data.length > 0 && planLink}
+      </div>
+      {dueItems.isPending && <ListSkeleton />}
+      {dueItems.isError && (
+        <Alert variant="destructive">
+          {errorMessage(dueItems.error)}
+          <Button variant="outline" size="sm" onClick={() => void dueItems.refetch()}>
+            {fr.retry}
+          </Button>
+        </Alert>
+      )}
+      {dueItems.isSuccess && dueItems.data.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col gap-4 pt-5 sm:flex-row sm:items-center sm:pt-6">
+            <div className="flex min-w-0 flex-1 items-center gap-4">
+              <IconTile className="bg-muted text-muted-foreground">
+                <CalendarClock />
+              </IconTile>
+              <div className="min-w-0">
+                <p className="font-semibold">{fr.schedule.emptyTitle}</p>
+                <p className="text-sm text-muted-foreground">{fr.schedule.emptyBody}</p>
+              </div>
+            </div>
+            {vehicle.status === 'ACTIVE' && (
+              <Link
+                to={`/vehicules/${vehicle.id}/plan`}
+                className={buttonVariants({ variant: 'outline', className: 'w-full sm:w-auto' })}
+              >
+                {fr.schedule.managePlan}
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+      )}
+      {dueItems.isSuccess && dueItems.data.length > 0 && (
+        <ul className="flex flex-col gap-3">
+          {dueItems.data.map((item) => (
+            <DueItemCard key={item.ruleId ?? item.deadlineId} item={item} />
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }
 

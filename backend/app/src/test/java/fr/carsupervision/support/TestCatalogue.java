@@ -11,6 +11,8 @@ public final class TestCatalogue {
     public static final UUID CLIMATISATION = maintenance(11);
     public static final UUID AUTRE = maintenance(13);
     public static final UUID ASSURANCE = UUID.fromString("20000000-0000-4000-8000-000000000001");
+    public static final UUID VIGNETTE = UUID.fromString("20000000-0000-4000-8000-000000000002");
+    public static final UUID VISITE_TECHNIQUE = UUID.fromString("20000000-0000-4000-8000-000000000003");
 
     private TestCatalogue() {
     }

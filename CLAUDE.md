@@ -75,7 +75,10 @@ Sous Windows, remplacer `./gradlew` par `.\gradlew.bat`.
   `MileageConsistency`), entretiens (`MaintenanceRecordService`), historique et dépenses
   (`VehicleHistoryService`, `/vehicles/{id}/history`), catalogue des types
   (`MaintenanceTypeService`, pré-rempli par le changeset 007 ; écritures ADMIN en US6).
-- `backend/schedule/`, `backend/document/` : échéances et justificatifs (002, à venir).
+- `backend/schedule/` : règles d'échéance, échéances à date fixe, suggestions et rappels
+  (`ScheduleController`, calcul pur `DueDateCalculator`, jamais stocké ; lit les entretiens via
+  `MaintenanceQueries`).
+- `backend/document/` : justificatifs (002, à venir).
 - `backend/app/` : point d'entrée, `application.yaml`, changelog maître ; ses tests
   (`src/test/java/`) sont les tests d'intégration `*IT` de l'application assemblée. Les tests
   unitaires `*Test` restent dans leur module.

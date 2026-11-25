@@ -10,6 +10,8 @@ export function ListCard({
   subtitle,
   meta,
   trailing,
+  stack = false,
+  wrap = false,
   className,
   ...props
 }: Omit<ComponentProps<'li'>, 'title'> & {
@@ -18,11 +20,16 @@ export function ListCard({
   subtitle?: ReactNode
   meta?: ReactNode
   trailing?: ReactNode
+  /** Actions sous le contenu sur mobile (à droite à partir de `sm`), pour les cartes à plusieurs boutons. */
+  stack?: boolean
+  /** Sous-titre sur plusieurs lignes au lieu d'être tronqué. */
+  wrap?: boolean
 }) {
   return (
     <li
       className={cn(
-        'flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-4 shadow-card',
+        'flex gap-3 rounded-2xl border border-border/60 bg-card p-4 shadow-card',
+        stack ? 'flex-col sm:flex-row sm:items-center' : 'items-center',
         className,
       )}
       {...props}
@@ -31,11 +38,17 @@ export function ListCard({
         {leading}
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2 font-semibold">{title}</div>
-          {subtitle && <div className="truncate text-sm text-muted-foreground">{subtitle}</div>}
+          {subtitle && (
+            <div className={cn('text-sm text-muted-foreground', wrap ? 'text-pretty' : 'truncate')}>{subtitle}</div>
+          )}
           {meta && <div className="mt-2 flex flex-wrap items-center gap-2">{meta}</div>}
         </div>
       </div>
-      {trailing && <div className="flex shrink-0 items-center justify-end gap-2">{trailing}</div>}
+      {trailing && (
+        <div className={cn('flex shrink-0 items-center justify-end gap-2', stack && 'border-t border-border/60 pt-3 sm:border-0 sm:pt-0')}>
+          {trailing}
+        </div>
+      )}
     </li>
   )
 }

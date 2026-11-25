@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, unwrap, type MaintenanceRecordInput, type MaintenanceTypeCategory } from './client'
+import { refreshSchedule } from './schedule'
 
 const recordKey = (recordId: string) => ['maintenance-records', recordId] as const
 
@@ -21,15 +22,17 @@ export function useMaintenanceRecord(recordId: string) {
   })
 }
 
-/** Un entretien change le kilométrage actuel (véhicules), l'historique et l'entretien lui-même. */
+/** Un entretien change le kilométrage actuel, l'historique, les échéances et l'entretien lui-même. */
 function useInvalidateMaintenance() {
   const queryClient = useQueryClient()
-  return () =>
-    Promise.all([
+  return () => {
+    refreshSchedule(queryClient)
+    return Promise.all([
       queryClient.invalidateQueries({ queryKey: ['vehicles'] }),
       queryClient.invalidateQueries({ queryKey: ['history'] }),
       queryClient.invalidateQueries({ queryKey: ['maintenance-records'] }),
     ])
+  }
 }
 
 export function useCreateMaintenanceRecord(vehicleId: string) {
@@ -59,6 +62,7 @@ export function useDeleteMaintenanceRecord() {
       unwrap(await api.DELETE('/maintenance-records/{recordId}', { params: { path: { recordId } } })),
     onSuccess: (_data, recordId) => {
       queryClient.removeQueries({ queryKey: recordKey(recordId) })
+      refreshSchedule(queryClient)
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: ['vehicles'] }),
         queryClient.invalidateQueries({ queryKey: ['history'] }),

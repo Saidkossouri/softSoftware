@@ -6,7 +6,8 @@ import { RequireAdmin } from '@/auth/RequireAdmin'
 import { RequireAuth } from '@/auth/RequireAuth'
 import { AppLayout } from '@/components/AppLayout'
 import { Toaster } from '@/components/ui/toast'
-import { HomePage } from '@/pages/HomePage'
+import { VehicleDetailPage } from '@/pages/VehicleDetailPage'
+import { VehiclesPage } from '@/pages/VehiclesPage'
 import { MemberEditPage } from '@/pages/admin/MemberEditPage'
 import { MembersPage } from '@/pages/admin/MembersPage'
 import { FleetPage } from '@/pages/admin/FleetPage'
@@ -22,7 +23,8 @@ export function App() {
           <RequireAuth>
             <Routes>
               <Route element={<AppLayout />}>
-                <Route index element={<HomePage />} />
+                <Route index element={<VehiclesPage />} />
+                <Route path="vehicules/:vehicleId" element={<VehicleDetailPage />} />
                 <Route path="admin" element={<RequireAdmin />}>
                   <Route path="membres" element={<MembersPage />} />
                   <Route path="membres/:memberId" element={<MemberEditPage />} />
@@ -30,7 +32,7 @@ export function App() {
                   <Route path="parc/nouveau" element={<VehicleFormPage />} />
                   <Route path="parc/:vehicleId" element={<VehicleFormPage />} />
                 </Route>
-                <Route path="*" element={<HomePage />} />
+                <Route path="*" element={<VehiclesPage />} />
               </Route>
             </Routes>
           </RequireAuth>

@@ -12,6 +12,7 @@ export type Vehicle = components['schemas']['Vehicle']
 export type VehicleInput = components['schemas']['VehicleInput']
 export type VehicleStatus = components['schemas']['VehicleStatus']
 export type EnergyType = components['schemas']['EnergyType']
+export type VehicleAccess = components['schemas']['VehicleAccess']
 
 /** Erreur de l'API au format Problem Details, avec le code stable du contrat. */
 export class ApiError extends Error {

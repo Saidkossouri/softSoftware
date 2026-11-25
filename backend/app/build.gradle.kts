@@ -9,6 +9,9 @@ dependencies {
     implementation(project(":backend:member"))
     implementation(project(":backend:security"))
     implementation(project(":backend:vehicle"))
+    implementation(project(":backend:maintenance"))
+    implementation(project(":backend:schedule"))
+    implementation(project(":backend:document"))
 
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.liquibase.core)

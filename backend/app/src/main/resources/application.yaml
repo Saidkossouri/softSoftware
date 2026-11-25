@@ -17,6 +17,11 @@ spring:
   session:
     jdbc:
       initialize-schema: never
+  servlet:
+    multipart:
+      # Justificatifs de 10 Mo au plus (FR-030) ; la requête porte aussi l'enveloppe multipart.
+      max-file-size: 10MB
+      max-request-size: 11MB
   security:
     oauth2:
       client:
@@ -50,6 +55,13 @@ management:
 app:
   # Email Google du premier administrateur (principe III de la constitution).
   initial-admin-email: ${INITIAL_ADMIN_EMAIL:}
+  # Fuseau de la « date du jour » (contrôles « pas dans le futur », totaux annuels, échéances).
+  # Africa/Casablanca suit l'heure légale marocaine de la base tzdata du JDK (research R8).
+  time-zone: ${APP_TIME_ZONE:Africa/Casablanca}
+  documents:
+    # Stockage des justificatifs : disque local (volume Docker documents-data en conteneur).
+    storage: local
+    storage-dir: ${DOCUMENTS_DIR:./data/documents}
 
 ---
 spring:

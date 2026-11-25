@@ -13,6 +13,9 @@ frontend/src/api/generated/
 # Secrets locaux
 .env
 
+# Justificatifs enregistrés en local (DOCUMENTS_DIR par défaut)
+data/
+
 # IDE
 .idea/
 .vscode/

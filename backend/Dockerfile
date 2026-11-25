@@ -12,6 +12,9 @@ COPY backend/common/build.gradle.kts backend/common/
 COPY backend/member/build.gradle.kts backend/member/
 COPY backend/security/build.gradle.kts backend/security/
 COPY backend/vehicle/build.gradle.kts backend/vehicle/
+COPY backend/maintenance/build.gradle.kts backend/maintenance/
+COPY backend/schedule/build.gradle.kts backend/schedule/
+COPY backend/document/build.gradle.kts backend/document/
 COPY backend/app/build.gradle.kts backend/app/
 # Le répertoire Gradle (distribution, dépendances, cache de build) est un cache BuildKit
 # conservé d'un build à l'autre : un fichier de build modifié ne retélécharge que ce qui
@@ -23,7 +26,10 @@ RUN --mount=type=cache,target=/root/.gradle,sharing=locked \
     ./gradlew --no-daemon --build-cache :backend:app:bootJar
 
 FROM eclipse-temurin:21-jre-alpine
-RUN addgroup -S app && adduser -S app -G app
+RUN addgroup -S app && adduser -S app -G app \
+    # Dossier des justificatifs (volume documents-data), propriété de l'utilisateur d'exécution.
+    && mkdir -p /var/lib/carsupervision/documents \
+    && chown app:app /var/lib/carsupervision/documents
 USER app
 WORKDIR /app
 COPY --from=build /app/backend/app/build/libs/carsupervision.jar app.jar

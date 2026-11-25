@@ -1,11 +1,12 @@
-import { CarFront, Pencil, Wrench } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { CarFront, Gauge, Pencil, Wrench } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { ApiError } from '@/api/client'
 import { useVehicle } from '@/api/vehicles'
 import { useAuth } from '@/auth/AuthContext'
 import { errorMessage } from '@/components/FormErrors'
 import { IconTile } from '@/components/ListCard'
+import { MileageReadingDialog } from '@/components/MileageReadingDialog'
 import { BackLink, SectionLabel } from '@/components/PageHeader'
 import { Plate } from '@/components/Plate'
 import { Alert } from '@/components/ui/alert'
@@ -15,6 +16,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { fr } from '@/i18n/fr'
+import { formatDate, formatKm } from '@/lib/format'
 
 /** Fiche d'un véhicule (US4, FR-021, FR-022) ; « Accès refusé » si le serveur refuse. */
 export function VehicleDetailPage() {
@@ -23,6 +25,7 @@ export function VehicleDetailPage() {
   const { state } = useAuth()
   const isAdmin = state.status === 'authenticated' && state.member.role === 'ADMIN'
   const forbidden = vehicle.error instanceof ApiError && vehicle.error.code === 'VEHICLE_FORBIDDEN'
+  const [recording, setRecording] = useState(false)
 
   return (
     <>
@@ -73,16 +76,25 @@ export function VehicleDetailPage() {
                 </p>
               </div>
             </div>
-            {isAdmin && (
-              <Link
-                to={`/admin/parc/${vehicle.data.id}`}
-                className={buttonVariants({ variant: 'outline', className: 'w-full sm:w-auto' })}
-              >
-                <Pencil aria-hidden />
-                {fr.vehicle.edit}
-              </Link>
-            )}
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {vehicle.data.status === 'ACTIVE' && (
+                <Button className="w-full sm:w-auto" onClick={() => setRecording(true)}>
+                  <Gauge aria-hidden />
+                  {fr.mileage.record}
+                </Button>
+              )}
+              {isAdmin && (
+                <Link
+                  to={`/admin/parc/${vehicle.data.id}`}
+                  className={buttonVariants({ variant: 'outline', className: 'w-full sm:w-auto' })}
+                >
+                  <Pencil aria-hidden />
+                  {fr.vehicle.edit}
+                </Link>
+              )}
+            </div>
           </div>
+          {recording && <MileageReadingDialog vehicle={vehicle.data} onClose={() => setRecording(false)} />}
 
           <Card>
             <CardContent className="flex flex-col gap-4 pt-5 sm:pt-6">
@@ -90,6 +102,14 @@ export function VehicleDetailPage() {
               <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Detail label={fr.vehicle.registration}>
                   <Plate registration={vehicle.data.registration} />
+                </Detail>
+                <Detail label={fr.vehicle.currentMileage}>
+                  <span className="tabular-nums">
+                    {fr.fleet.currentMileage(
+                      formatKm(vehicle.data.currentMileage.mileageKm),
+                      formatDate(vehicle.data.currentMileage.date),
+                    )}
+                  </span>
                 </Detail>
                 <Detail label={fr.vehicle.mileage}>
                   <span className="tabular-nums">{fr.fleet.mileage(vehicle.data.initialMileageKm)}</span>

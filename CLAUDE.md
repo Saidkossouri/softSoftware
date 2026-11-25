@@ -21,7 +21,8 @@ La constitution `.specify/memory/constitution.md` prévaut. En pratique :
   `frontend/src/api/generated/`).
 - **Monolithe multi-modules** : un sous-projet Gradle par module dans `backend/`, un seul
   déployable (`backend/app`). Dépendances dans un seul sens :
-  `app → vehicle → security → member → common → api-contract`. Ne jamais créer de cycle ni
+  `app → document/schedule → maintenance → vehicle → security → member → common → api-contract`
+  (un module bas n'appelle un module haut que par un port, ex. `VehicleMileageFloor`). Ne jamais créer de cycle ni
   faire dépendre un module d'un module « au-dessus » ; un nouveau module métier est un nouveau
   sous-projet (ajouté dans `settings.gradle.kts` et comme dépendance de `app`).
 - **Dans chaque module** : couches Controller / Service / Repository / Mapper (MapStruct).
@@ -64,10 +65,15 @@ Sous Windows, remplacer `./gradlew` par `.\gradlew.bat`.
 ## Repères dans le code
 
 - `backend/api-contract/` : contrat OpenAPI et génération.
-- `backend/common/` : erreurs Problem Details, normalisation, horloge, configuration web.
+- `backend/common/` : erreurs Problem Details, normalisation, horloge, date du jour au Maroc
+  (`Today`, fuseau `app.time-zone`, `Africa/Casablanca` par défaut), configuration web.
 - `backend/member/` : membres, rôles, liste blanche, administrateur initial.
 - `backend/security/` : connexion Google, session, membre connecté (`CurrentMember`), `/api/me`.
-- `backend/vehicle/` : parc de véhicules (`VehicleService`, `/api/vehicles`) ; attributions à venir (histoire 4).
+- `backend/vehicle/` : parc de véhicules (`VehicleService`, `/api/vehicles`), attributions,
+  kilométrage actuel, `VehicleAccessGuard` (lecture, `lockForWrite`) et `AuthorPolicy`.
+- `backend/maintenance/` : relevés de kilométrage (`MileageReadingService`, règle
+  `MileageConsistency`) ; entretiens et catalogue à venir (002, US2 et US6).
+- `backend/schedule/`, `backend/document/` : échéances et justificatifs (002, à venir).
 - `backend/app/` : point d'entrée, `application.yaml`, changelog maître ; ses tests
   (`src/test/java/`) sont les tests d'intégration `*IT` de l'application assemblée. Les tests
   unitaires `*Test` restent dans leur module.

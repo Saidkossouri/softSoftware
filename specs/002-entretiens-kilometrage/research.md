@@ -138,9 +138,11 @@ Testcontainers, React, shadcn/ui) est celui de la fonctionnalité 001
 - **Décision** : nouveau composant `common.time.Today` qui donne la date du jour dans le fuseau
   `app.time-zone` (par défaut `Africa/Casablanca`) à partir de l'horloge partagée. Il sert aux
   contrôles « pas dans le futur », à l'année des totaux et au calcul des échéances.
-- **Justification** : l'horloge est en UTC ; un relevé saisi à 00 h 30 au Maroc (UTC+1) ne doit pas être
-  refusé comme « dans le futur ». `Africa/Casablanca` suit le retour à UTC+0 pendant le
-  ramadan (base tzdata du JDK, à garder à jour). Les tests fixent l'horloge.
+- **Justification** : l'horloge est en UTC ; un relevé saisi juste après minuit au Maroc ne doit pas être
+  refusé comme « dans le futur ». `Africa/Casablanca` suit l'heure légale marocaine de la base
+  tzdata : UTC+1 avec retour à UTC+0 pendant le ramadan, puis UTC+0 toute l'année à partir du
+  20 septembre 2026 d'après tzdata 2026f. Le code ne fige aucun décalage ; garder le JDK (et
+  donc tzdata) à jour. Les tests fixent l'horloge.
 
 ## R9. Catalogue des types d'entretien géré par l'ADMIN
 

@@ -513,8 +513,8 @@ membre voit ces changements dans le formulaire d'entretien et lors de la créati
   nécessaire pour un usage familial.
 - Le garage est un texte libre ; il n'y a pas de carnet d'adresses de garages.
 - Les montants sont en dirhams marocains (MAD, affichés « DH ») uniquement ; la date du jour
-  est celle du Maroc (fuseau `Africa/Casablanca`, qui suit le passage à UTC+0 pendant le
-  ramadan).
+  est celle du Maroc (fuseau `Africa/Casablanca`, qui suit l'heure légale marocaine,
+  changements compris).
 - Au Maroc la vignette se paie en janvier : le membre fixe la date de l'échéance « Vignette »
   (par exemple le 31 janvier) en acceptant la suggestion ; aucune date n'est imposée.
 - La consommation de carburant (pleins) n'est pas suivie.

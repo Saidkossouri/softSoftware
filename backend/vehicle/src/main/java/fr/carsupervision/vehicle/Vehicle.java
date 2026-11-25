@@ -6,6 +6,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -42,6 +43,13 @@ public class Vehicle {
 
     @Column(length = 17)
     private String vin;
+
+    /** Kilométrage le plus récent (relevé ou entretien), sinon le kilométrage de départ (research R3). */
+    @Column(name = "current_mileage_km", nullable = false)
+    private Integer currentMileageKm;
+
+    @Column(name = "current_mileage_date", nullable = false)
+    private LocalDate currentMileageDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "energy_type", length = 12)
@@ -124,6 +132,19 @@ public class Vehicle {
 
     public void setInitialMileageKm(Integer initialMileageKm) {
         this.initialMileageKm = initialMileageKm;
+    }
+
+    public Integer getCurrentMileageKm() {
+        return currentMileageKm;
+    }
+
+    public LocalDate getCurrentMileageDate() {
+        return currentMileageDate;
+    }
+
+    public void setCurrentMileage(int mileageKm, LocalDate date) {
+        this.currentMileageKm = mileageKm;
+        this.currentMileageDate = date;
     }
 
     public String getVin() {

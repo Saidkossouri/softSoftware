@@ -13,6 +13,11 @@ export type VehicleInput = components['schemas']['VehicleInput']
 export type VehicleStatus = components['schemas']['VehicleStatus']
 export type EnergyType = components['schemas']['EnergyType']
 export type VehicleAccess = components['schemas']['VehicleAccess']
+export type CurrentMileage = components['schemas']['CurrentMileage']
+export type MileageReading = components['schemas']['MileageReading']
+export type MileageReadingInput = components['schemas']['MileageReadingInput']
+export type MaintenanceTypeCategory = components['schemas']['MaintenanceTypeCategory']
+export type DueStatus = components['schemas']['DueStatus']
 
 /** Erreur de l'API au format Problem Details, avec le code stable du contrat. */
 export class ApiError extends Error {

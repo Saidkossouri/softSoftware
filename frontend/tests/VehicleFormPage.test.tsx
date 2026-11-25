@@ -11,6 +11,7 @@ const vehicle = {
   model: '5008',
   registration: 'AB-123-CD',
   initialMileageKm: 45000,
+  currentMileage: { mileageKm: 45000, date: '2026-11-20' },
   status: 'ACTIVE',
   createdAt: '2026-11-20T08:00:00Z',
   updatedAt: '2026-11-20T08:00:00Z',

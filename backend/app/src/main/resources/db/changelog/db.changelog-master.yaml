@@ -11,3 +11,9 @@ databaseChangeLog:
   - include:
       file: changes/004-create-spring-session.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/005-add-vehicle-current-mileage.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/006-create-mileage-reading.yaml
+      relativeToChangelogFile: true

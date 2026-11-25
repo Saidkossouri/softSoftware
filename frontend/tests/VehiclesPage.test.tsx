@@ -10,6 +10,7 @@ const clio = {
   model: 'Clio',
   registration: 'AB-123-CD',
   initialMileageKm: 45000,
+  currentMileage: { mileageKm: 45000, date: '2026-11-20' },
   status: 'ACTIVE',
   createdAt: '2026-11-20T08:00:00Z',
   updatedAt: '2026-11-20T08:00:00Z',
@@ -41,7 +42,8 @@ describe('accueil « Mes véhicules »', () => {
 
     const link = await screen.findByRole('link', { name: 'Ouvrir La Clio' })
     expect(link).toHaveAttribute('href', `/vehicules/${clio.id}`)
-    expect(screen.getByText(/^45\s000 km$/)).toBeInTheDocument()
+    expect(screen.getByText(/^45\s000\skm · relevé le 20\/11\/2026$/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Relever le kilométrage de La Clio' })).toBeInTheDocument()
   })
 
   it('propose à un administrateur d’ajouter le premier véhicule', async () => {

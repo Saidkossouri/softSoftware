@@ -12,5 +12,8 @@ include(
     "backend:member",       // membres, rôles, liste blanche, administrateur initial
     "backend:security",     // connexion Google, session, membre connecté
     "backend:vehicle",      // parc de véhicules et attributions
+    "backend:maintenance",  // relevés de kilométrage, entretiens, catalogue des types
+    "backend:schedule",     // échéances, rappels et suggestions
+    "backend:document",     // justificatifs des entretiens et leur stockage
     "backend:app",          // point d'entrée Spring Boot, configuration, tests d'intégration
 )

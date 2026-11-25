@@ -3,7 +3,7 @@ openapi: 3.0.3
 # et openapi-typescript.
 info:
   title: carSupervision API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     API REST de carSupervision (suivi d'entretien des véhicules de la famille).
 
@@ -30,6 +30,16 @@ tags:
     description: Parc de véhicules
   - name: vehicle-access
     description: Véhicules attribués à chaque membre (ADMIN uniquement)
+  - name: mileage
+    description: Relevés kilométriques et kilométrage actuel
+  - name: maintenance
+    description: Entretiens réalisés et historique d'un véhicule
+  - name: maintenance-types
+    description: Catalogue des types d'entretien (modification réservée aux ADMIN)
+  - name: schedule
+    description: Règles d'échéance, échéances à date fixe et rappels
+  - name: documents
+    description: Justificatifs (factures en PDF, photos) rattachés aux entretiens
 
 security:
   - sessionCookie: []
@@ -344,7 +354,9 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: Immatriculation déjà utilisée (`REGISTRATION_ALREADY_EXISTS`)
+          description: |
+            Immatriculation déjà utilisée (`REGISTRATION_ALREADY_EXISTS`) ou kilométrage de
+            départ supérieur au plus petit kilométrage déjà saisi (`INITIAL_MILEAGE_ABOVE_RECORDS`, FR-009).
           content:
             application/problem+json:
               schema:
@@ -392,6 +404,770 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  # ---------------------------------------------------------------------------
+  # Fonctionnalité 002 : kilométrage, entretiens, échéances, justificatifs.
+  # Règle d'accès commune : tout membre ayant accès au véhicule (ADMIN, ou USER attribué sur
+  # un véhicule actif) ; sinon 403 `VEHICLE_FORBIDDEN` sans détail, même pour une ressource
+  # inexistante (un ADMIN reçoit 404). Toute écriture sur un véhicule archivé : 409
+  # `VEHICLE_ARCHIVED`.
+  # ---------------------------------------------------------------------------
+
+  /maintenance-types:
+    get:
+      tags: [maintenance-types]
+      operationId: listMaintenanceTypes
+      summary: Catalogue des types d'entretien
+      description: |
+        Types triés par catégorie puis ordre d'affichage. Par défaut, seuls les types actifs ;
+        `includeInactive=true` est réservé aux ADMIN (403 `ADMIN_ONLY` pour un USER).
+      parameters:
+        - name: includeInactive
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/MaintenanceTypeCategory'
+      responses:
+        '200':
+          description: Types du catalogue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MaintenanceType'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [maintenance-types]
+      operationId: createMaintenanceType
+      summary: Ajouter un type au catalogue (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceTypeInput'
+      responses:
+        '201':
+          description: Type créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceType'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/TypeNameConflict'
+
+  /maintenance-types/{typeId}:
+    parameters:
+      - $ref: '#/components/parameters/TypeId'
+    put:
+      tags: [maintenance-types]
+      operationId: updateMaintenanceType
+      summary: Modifier un type (ADMIN) ; la catégorie ne change pas
+      description: |
+        Changer une fréquence recommandée ne modifie pas les règles déjà créées (FR-022). Un
+        renommage s'affiche partout, historique compris.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceTypeInput'
+      responses:
+        '200':
+          description: Type modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceType'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/TypeNameConflict'
+
+  /maintenance-types/{typeId}/deactivate:
+    parameters:
+      - $ref: '#/components/parameters/TypeId'
+    post:
+      tags: [maintenance-types]
+      operationId: deactivateMaintenanceType
+      summary: Désactiver un type (ADMIN, idempotent) ; il reste affiché sur les saisies existantes
+      responses:
+        '200':
+          description: Type désactivé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceType'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /maintenance-types/{typeId}/reactivate:
+    parameters:
+      - $ref: '#/components/parameters/TypeId'
+    post:
+      tags: [maintenance-types]
+      operationId: reactivateMaintenanceType
+      summary: Réactiver un type (ADMIN, idempotent)
+      responses:
+        '200':
+          description: Type réactivé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceType'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /vehicles/{vehicleId}/history:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      tags: [maintenance]
+      operationId: getVehicleHistory
+      summary: Kilométrage actuel, totaux de dépenses et historique d'un véhicule
+      description: |
+        Historique du plus récent au plus ancien ; à date égale, le plus grand kilométrage en
+        premier (FR-014). Un ADMIN peut consulter un véhicule archivé (FR-018).
+      parameters:
+        - name: typeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Ne garder que les entretiens comportant ce type (les relevés sont alors exclus).
+        - name: recordsOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Masquer les relevés simples (FR-016).
+      responses:
+        '200':
+          description: Historique du véhicule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleHistory'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /vehicles/{vehicleId}/mileage-readings:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    post:
+      tags: [mileage]
+      operationId: createMileageReading
+      summary: Enregistrer un relevé kilométrique
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MileageReadingInput'
+      responses:
+        '201':
+          description: Relevé enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MileageReading'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MileageConflict'
+
+  /mileage-readings/{readingId}:
+    parameters:
+      - $ref: '#/components/parameters/ReadingId'
+    put:
+      tags: [mileage]
+      operationId: updateMileageReading
+      summary: Corriger un relevé (auteur ou ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MileageReadingInput'
+      responses:
+        '200':
+          description: Relevé corrigé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MileageReading'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MileageConflict'
+    delete:
+      tags: [mileage]
+      operationId: deleteMileageReading
+      summary: Supprimer définitivement un relevé (auteur ou ADMIN)
+      responses:
+        '204':
+          description: Relevé supprimé ; le kilométrage actuel est recalculé
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VehicleArchived'
+
+  /vehicles/{vehicleId}/maintenance-records:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    post:
+      tags: [maintenance]
+      operationId: createMaintenanceRecord
+      summary: Enregistrer un entretien réalisé
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceRecordInput'
+      responses:
+        '201':
+          description: Entretien enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRecord'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MileageConflict'
+
+  /maintenance-records/{recordId}:
+    parameters:
+      - $ref: '#/components/parameters/RecordId'
+    get:
+      tags: [maintenance]
+      operationId: getMaintenanceRecord
+      summary: Détail d'un entretien
+      responses:
+        '200':
+          description: Entretien
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRecord'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [maintenance]
+      operationId: updateMaintenanceRecord
+      summary: Modifier un entretien (auteur ou ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceRecordInput'
+      responses:
+        '200':
+          description: Entretien modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRecord'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MileageConflict'
+    delete:
+      tags: [maintenance]
+      operationId: deleteMaintenanceRecord
+      summary: Supprimer définitivement un entretien et ses justificatifs (auteur ou ADMIN)
+      responses:
+        '204':
+          description: Entretien et justificatifs supprimés ; kilométrage et échéances recalculés
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VehicleArchived'
+
+  /vehicles/{vehicleId}/due-items:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      tags: [schedule]
+      operationId: listVehicleDueItems
+      summary: Échéances calculées d'un véhicule (règles et échéances à date fixe à faire)
+      description: Triées en retard d'abord, puis par proximité (FR-027).
+      responses:
+        '200':
+          description: Échéances du véhicule
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DueItem'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /vehicles/{vehicleId}/maintenance-rules:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    post:
+      tags: [schedule]
+      operationId: createMaintenanceRule
+      summary: Créer une règle d'échéance (une seule par opération et par véhicule)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceRuleInput'
+      responses:
+        '201':
+          description: Règle créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRule'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Une règle existe déjà pour cette opération (`RULE_ALREADY_EXISTS`) ou véhicule
+            archivé (`VEHICLE_ARCHIVED`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  /maintenance-rules/{ruleId}:
+    parameters:
+      - $ref: '#/components/parameters/RuleId'
+    put:
+      tags: [schedule]
+      operationId: updateMaintenanceRule
+      summary: Modifier les intervalles ou le point de départ d'une règle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceRuleUpdate'
+      responses:
+        '200':
+          description: Règle modifiée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRule'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VehicleArchived'
+    delete:
+      tags: [schedule]
+      operationId: deleteMaintenanceRule
+      summary: Supprimer une règle d'échéance
+      responses:
+        '204':
+          description: Règle supprimée
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VehicleArchived'
+
+  /vehicles/{vehicleId}/deadlines:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    post:
+      tags: [schedule]
+      operationId: createDeadline
+      summary: Créer une échéance à date fixe (assurance, vignette…)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeadlineInput'
+      responses:
+        '201':
+          description: Échéance créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deadline'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VehicleArchived'
+
+  /deadlines/{deadlineId}:
+    parameters:
+      - $ref: '#/components/parameters/DeadlineId'
+    put:
+      tags: [schedule]
+      operationId: updateDeadline
+      summary: Modifier une échéance à date fixe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeadlineInput'
+      responses:
+        '200':
+          description: Échéance modifiée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deadline'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VehicleArchived'
+    delete:
+      tags: [schedule]
+      operationId: deleteDeadline
+      summary: Supprimer une échéance à date fixe
+      responses:
+        '204':
+          description: Échéance supprimée
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VehicleArchived'
+
+  /deadlines/{deadlineId}/complete:
+    parameters:
+      - $ref: '#/components/parameters/DeadlineId'
+    post:
+      tags: [schedule]
+      operationId: completeDeadline
+      summary: Marquer une échéance comme faite (crée la suivante si elle est récurrente)
+      description: "Idempotent : une échéance déjà faite est renvoyée telle quelle."
+      responses:
+        '200':
+          description: Échéance faite, et la suivante si elle est récurrente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeadlineCompletion'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VehicleArchived'
+
+  /vehicles/{vehicleId}/deadline-suggestions:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      tags: [schedule]
+      operationId: listDeadlineSuggestions
+      summary: Échéances administratives suggérées pour un véhicule actif (FR-040)
+      description: |
+        Types Administratif actifs dont l'âge de suggestion est atteint (année en cours −
+        année de mise en circulation ; âge 0 = tout véhicule), sans échéance à faire de ce
+        type sur le véhicule, et non ignorés pour ce véhicule. Liste vide pour un véhicule
+        archivé.
+      responses:
+        '200':
+          description: Suggestions, dans l'ordre du catalogue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeadlineSuggestion'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /vehicles/{vehicleId}/deadline-suggestions/{typeId}/dismiss:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+      - $ref: '#/components/parameters/TypeId'
+    post:
+      tags: [schedule]
+      operationId: dismissDeadlineSuggestion
+      summary: Ignorer une suggestion pour ce véhicule (idempotent)
+      responses:
+        '204':
+          description: Suggestion ignorée
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VehicleArchived'
+
+  /reminders:
+    get:
+      tags: [schedule]
+      operationId: getReminders
+      summary: Rappels de l'accueil pour les véhicules actifs accessibles au membre
+      description: |
+        Échéances « En retard » et « Bientôt » (FR-028) et véhicules sans kilométrage saisi
+        depuis plus de 30 jours (FR-035). Les véhicules archivés n'y figurent jamais.
+      responses:
+        '200':
+          description: Rappels, en retard d'abord
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reminders'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+
+  /maintenance-records/{recordId}/documents:
+    parameters:
+      - $ref: '#/components/parameters/RecordId'
+    get:
+      tags: [documents]
+      operationId: listRecordDocuments
+      summary: Justificatifs d'un entretien
+      responses:
+        '200':
+          description: Justificatifs, du plus ancien au plus récent
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [documents]
+      operationId: uploadRecordDocument
+      summary: Joindre un justificatif (PDF, JPEG, PNG ou WebP, 10 Mo au plus)
+      description: |
+        Le format est vérifié sur le contenu du fichier (signature), pas sur l'extension ni
+        sur le type annoncé par le navigateur. 10 justificatifs au plus par entretien.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Justificatif enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Limite de 10 justificatifs atteinte (`DOCUMENT_LIMIT_REACHED`) ou véhicule archivé
+            (`VEHICLE_ARCHIVED`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Fichier de plus de 10 Mo (`DOCUMENT_TOO_LARGE`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Format non accepté (`DOCUMENT_TYPE_NOT_ALLOWED`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  /documents/{documentId}/content:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    get:
+      tags: [documents]
+      operationId: getDocumentContent
+      summary: Contenu d'un justificatif, servi par le backend après contrôle d'accès
+      description: |
+        `Content-Disposition` vaut `inline` (aperçu) ou `attachment` (téléchargement) avec le
+        nom d'origine ; `Cache-Control: private, no-store` ; `X-Content-Type-Options: nosniff`.
+      parameters:
+        - name: download
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Contenu du fichier
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /documents/{documentId}:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    delete:
+      tags: [documents]
+      operationId: deleteDocument
+      summary: Supprimer définitivement un justificatif (auteur ou ADMIN)
+      responses:
+        '204':
+          description: Justificatif supprimé
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VehicleArchived'
+
 components:
   securitySchemes:
     sessionCookie:
@@ -416,6 +1192,48 @@ components:
         type: string
         format: uuid
 
+    TypeId:
+      name: typeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ReadingId:
+      name: readingId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RecordId:
+      name: recordId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RuleId:
+      name: ruleId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DeadlineId:
+      name: deadlineId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
     Unauthenticated:
       description: Aucune session valide (`UNAUTHENTICATED`) ; se connecter avec Google.
@@ -439,6 +1257,29 @@ components:
             $ref: '#/components/schemas/Problem'
     ValidationError:
       description: Saisie invalide (`VALIDATION_ERROR`), avec un message par champ.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    TypeNameConflict:
+      description: Nom déjà présent dans le catalogue, sans tenir compte de la casse (`TYPE_NAME_ALREADY_EXISTS`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    VehicleArchived:
+      description: Aucune saisie possible sur un véhicule archivé (`VEHICLE_ARCHIVED`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    MileageConflict:
+      description: |
+        Kilométrage incohérent avec un kilométrage daté avant ou après lui, ou inférieur au
+        kilométrage de départ (`MILEAGE_INCONSISTENT`, le message cite la saisie en conflit) ;
+        écart de plus de 100 000 km non confirmé (`MILEAGE_JUMP_NOT_CONFIRMED`, renvoyer avec
+        `confirmLargeJump: true`) ; véhicule archivé (`VEHICLE_ARCHIVED`).
       content:
         application/problem+json:
           schema:
@@ -572,7 +1413,7 @@ components:
 
     Vehicle:
       type: object
-      required: [id, nickname, make, model, registration, initialMileageKm, status, createdAt, updatedAt]
+      required: [id, nickname, make, model, registration, initialMileageKm, status, createdAt, updatedAt, currentMileage]
       properties:
         id:
           type: string
@@ -601,6 +1442,8 @@ components:
         updatedAt:
           type: string
           format: date-time
+        currentMileage:
+          $ref: '#/components/schemas/CurrentMileage'
 
     FieldError:
       type: object
@@ -646,7 +1489,559 @@ components:
             - MEMBER_IS_ADMIN
             - CSRF_INVALID
             - INTERNAL_ERROR
+            - VEHICLE_ARCHIVED
+            - NOT_AUTHOR
+            - MILEAGE_INCONSISTENT
+            - MILEAGE_JUMP_NOT_CONFIRMED
+            - INITIAL_MILEAGE_ABOVE_RECORDS
+            - RULE_ALREADY_EXISTS
+            - DOCUMENT_TYPE_NOT_ALLOWED
+            - DOCUMENT_TOO_LARGE
+            - DOCUMENT_LIMIT_REACHED
+            - TYPE_NAME_ALREADY_EXISTS
         fieldErrors:
           type: array
           items:
             $ref: '#/components/schemas/FieldError'
+
+    # --- Fonctionnalité 002 -----------------------------------------------------
+
+    MaintenanceTypeCategory:
+      type: string
+      description: |
+        `MAINTENANCE` : opération d'un entretien, point d'accroche des règles (fréquence en km
+        et/ou en mois). `ADMINISTRATIVE` : modèle d'échéance à date fixe (fréquence en mois,
+        âge de suggestion).
+      enum: [MAINTENANCE, ADMINISTRATIVE]
+    MaintenanceTypeInput:
+      type: object
+      required: [name, category]
+      description: |
+        `category` est ignorée en modification (elle ne change pas). `defaultIntervalKm` et
+        `requiresDescription` ne valent que pour `MAINTENANCE` ; `suggestFromAgeYears` que pour
+        `ADMINISTRATIVE` (sinon 400).
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        category:
+          $ref: '#/components/schemas/MaintenanceTypeCategory'
+        defaultIntervalKm:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        defaultIntervalMonths:
+          type: integer
+          minimum: 1
+          maximum: 240
+        requiresDescription:
+          type: boolean
+          default: false
+        suggestFromAgeYears:
+          type: integer
+          minimum: 0
+          maximum: 50
+          description: Âge du véhicule (années) à partir duquel l'échéance est suggérée ; absent = jamais.
+        displayOrder:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Ordre d'affichage dans sa catégorie ; à la fin par défaut.
+    MaintenanceType:
+      type: object
+      required: [id, name, category, requiresDescription, displayOrder, active]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          $ref: '#/components/schemas/MaintenanceTypeCategory'
+        defaultIntervalKm:
+          type: integer
+        defaultIntervalMonths:
+          type: integer
+        requiresDescription:
+          type: boolean
+        suggestFromAgeYears:
+          type: integer
+        displayOrder:
+          type: integer
+        active:
+          type: boolean
+    TypeRef:
+      type: object
+      description: Référence à un type du catalogue, sous son nom actuel (même désactivé).
+      required: [id, name, active]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        active:
+          type: boolean
+    DeadlineSuggestion:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: '#/components/schemas/TypeRef'
+        recurrenceMonths:
+          type: integer
+          description: Récurrence proposée (fréquence du type).
+
+    CurrentMileage:
+      type: object
+      required: [mileageKm, date]
+      properties:
+        mileageKm:
+          type: integer
+        date:
+          type: string
+          format: date
+          description: Date du kilométrage le plus récent (date de création du véhicule pour le kilométrage de départ).
+
+    MileageReadingInput:
+      type: object
+      required: [readingDate, mileageKm]
+      properties:
+        readingDate:
+          type: string
+          format: date
+          description: Pas dans le futur (jour au Maroc).
+        mileageKm:
+          type: integer
+          minimum: 0
+          maximum: 9999999
+        note:
+          type: string
+          maxLength: 200
+        confirmLargeJump:
+          type: boolean
+          default: false
+          description: Confirme un écart de plus de 100 000 km avec le kilométrage précédent (FR-007).
+    MileageReading:
+      type: object
+      required: [id, vehicleId, readingDate, mileageKm, authorName, canEdit, createdAt, updatedAt, currentMileage]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        readingDate:
+          type: string
+          format: date
+        mileageKm:
+          type: integer
+        note:
+          type: string
+        authorName:
+          type: string
+        canEdit:
+          type: boolean
+          description: Vrai si le membre connecté est l'auteur ou un ADMIN.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        currentMileage:
+          $ref: '#/components/schemas/CurrentMileage'
+
+    MaintenanceRecordInput:
+      type: object
+      required: [recordDate, mileageKm, operations]
+      properties:
+        recordDate:
+          type: string
+          format: date
+        mileageKm:
+          type: integer
+          minimum: 0
+          maximum: 9999999
+        typeIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Types actifs de catégorie `MAINTENANCE` (sinon 400).
+          items:
+            type: string
+            format: uuid
+        description:
+          type: string
+          maxLength: 200
+          description: Obligatoire si l'un des types a `requiresDescription` (par exemple « Autre »).
+        costCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000
+          description: Coût total TTC en centimes de dirham (450,00 DH = 45000).
+        garage:
+          type: string
+          maxLength: 100
+        notes:
+          type: string
+          maxLength: 2000
+        confirmLargeJump:
+          type: boolean
+          default: false
+    MaintenanceRecord:
+      type: object
+      required: [id, vehicleId, recordDate, mileageKm, types, authorName, canEdit, documentCount, createdAt, updatedAt, currentMileage]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        recordDate:
+          type: string
+          format: date
+        mileageKm:
+          type: integer
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeRef'
+        description:
+          type: string
+        costCents:
+          type: integer
+        garage:
+          type: string
+        notes:
+          type: string
+        authorName:
+          type: string
+        canEdit:
+          type: boolean
+        documentCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        currentMileage:
+          $ref: '#/components/schemas/CurrentMileage'
+
+    HistoryEntryKind:
+      type: string
+      enum: [READING, RECORD]
+    HistoryEntry:
+      type: object
+      description: |
+        Une ligne de l'historique. Les champs `types`, `description`, `costCents`,
+        `garage`, `notes` et `documentCount` ne concernent que les entretiens (`RECORD`) ;
+        `note` ne concerne que les relevés (`READING`).
+      required: [kind, id, date, mileageKm, authorName, canEdit]
+      properties:
+        kind:
+          $ref: '#/components/schemas/HistoryEntryKind'
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        mileageKm:
+          type: integer
+        authorName:
+          type: string
+        canEdit:
+          type: boolean
+        note:
+          type: string
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeRef'
+        description:
+          type: string
+        costCents:
+          type: integer
+        garage:
+          type: string
+        notes:
+          type: string
+        documentCount:
+          type: integer
+    CostTotals:
+      type: object
+      required: [year, currentYearCents, allTimeCents]
+      properties:
+        year:
+          type: integer
+          description: Année civile en cours (Maroc).
+        currentYearCents:
+          type: integer
+        allTimeCents:
+          type: integer
+    VehicleHistory:
+      type: object
+      required: [vehicleId, currentMileage, costTotals, entries]
+      properties:
+        vehicleId:
+          type: string
+          format: uuid
+        currentMileage:
+          $ref: '#/components/schemas/CurrentMileage'
+        costTotals:
+          $ref: '#/components/schemas/CostTotals'
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryEntry'
+
+    MaintenanceRuleInput:
+      type: object
+      required: [typeId]
+      description: |
+        Au moins un des deux intervalles est obligatoire ; à la création, l'interface les
+        pré-remplit avec la fréquence recommandée du type (FR-022).
+      properties:
+        typeId:
+          type: string
+          format: uuid
+          description: Type actif de catégorie `MAINTENANCE` (sinon 400).
+        intervalKm:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        intervalMonths:
+          type: integer
+          minimum: 1
+          maximum: 240
+        baselineDate:
+          type: string
+          format: date
+          description: Dernière réalisation connue hors historique ; aujourd'hui par défaut.
+        baselineMileageKm:
+          type: integer
+          minimum: 0
+          description: Kilométrage de cette réalisation ; kilométrage actuel par défaut.
+    MaintenanceRuleUpdate:
+      type: object
+      required: [baselineDate, baselineMileageKm]
+      description: Le type d'une règle ne change pas ; au moins un des deux intervalles est obligatoire.
+      properties:
+        intervalKm:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        intervalMonths:
+          type: integer
+          minimum: 1
+          maximum: 240
+        baselineDate:
+          type: string
+          format: date
+        baselineMileageKm:
+          type: integer
+          minimum: 0
+    MaintenanceRule:
+      type: object
+      required: [id, vehicleId, type, baselineDate, baselineMileageKm]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/TypeRef'
+        intervalKm:
+          type: integer
+        intervalMonths:
+          type: integer
+        baselineDate:
+          type: string
+          format: date
+        baselineMileageKm:
+          type: integer
+
+    DeadlineInput:
+      type: object
+      required: [dueDate]
+      description: Au moins `typeId` ou `label` ; sans `label`, le nom du type est utilisé.
+      properties:
+        typeId:
+          type: string
+          format: uuid
+          description: Type actif de catégorie `ADMINISTRATIVE` (sinon 400).
+        label:
+          type: string
+          minLength: 1
+          maxLength: 60
+        dueDate:
+          type: string
+          format: date
+        recurrenceMonths:
+          type: integer
+          minimum: 1
+          maximum: 120
+          description: Récurrence en mois (12 = chaque année) ; absente pour une échéance unique.
+    Deadline:
+      type: object
+      required: [id, vehicleId, label, dueDate, done]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/TypeRef'
+        label:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        recurrenceMonths:
+          type: integer
+        done:
+          type: boolean
+        doneAt:
+          type: string
+          format: date-time
+    DeadlineCompletion:
+      type: object
+      required: [completed]
+      properties:
+        completed:
+          $ref: '#/components/schemas/Deadline'
+        next:
+          $ref: '#/components/schemas/Deadline'
+
+    DueStatus:
+      type: string
+      description: |
+        `OVERDUE` : date atteinte ou dépassée, ou kilométrage actuel ≥ kilométrage d'échéance.
+        `SOON` : moins de 30 jours ou moins de 1 000 km restants. `OK` sinon. Avec deux termes,
+        le plus défavorable l'emporte (FR-024).
+      enum: [OVERDUE, SOON, OK]
+    DueItemKind:
+      type: string
+      enum: [RULE, DEADLINE]
+    DueItem:
+      type: object
+      description: |
+        Échéance calculée (jamais stockée). Pour une règle (`RULE`) : `ruleId`, `type`,
+        intervalles, dernière réalisation, `dueDate` et/ou `dueMileageKm`. Pour une échéance à
+        date fixe (`DEADLINE`) : `deadlineId`, `type` éventuel, `label`, `dueDate`, `recurrenceMonths`.
+        `remainingDays` et `remainingKm` sont négatifs en cas de retard.
+      required: [kind, status]
+      properties:
+        kind:
+          $ref: '#/components/schemas/DueItemKind'
+        status:
+          $ref: '#/components/schemas/DueStatus'
+        ruleId:
+          type: string
+          format: uuid
+        deadlineId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/TypeRef'
+        label:
+          type: string
+        intervalKm:
+          type: integer
+        intervalMonths:
+          type: integer
+        recurrenceMonths:
+          type: integer
+        lastDoneDate:
+          type: string
+          format: date
+        lastDoneMileageKm:
+          type: integer
+        lastDoneRecordId:
+          type: string
+          format: uuid
+          description: Entretien qui sert de point de départ ; absent si c'est le point de départ de la règle.
+        dueDate:
+          type: string
+          format: date
+        dueMileageKm:
+          type: integer
+        remainingDays:
+          type: integer
+        remainingKm:
+          type: integer
+    VehicleDueItem:
+      type: object
+      required: [vehicleId, vehicleNickname, item]
+      properties:
+        vehicleId:
+          type: string
+          format: uuid
+        vehicleNickname:
+          type: string
+        item:
+          $ref: '#/components/schemas/DueItem'
+    MileageReadingReminder:
+      type: object
+      required: [vehicleId, vehicleNickname, currentMileage]
+      properties:
+        vehicleId:
+          type: string
+          format: uuid
+        vehicleNickname:
+          type: string
+        currentMileage:
+          $ref: '#/components/schemas/CurrentMileage'
+    Reminders:
+      type: object
+      required: [dueItems, mileageReadings]
+      properties:
+        dueItems:
+          type: array
+          description: Échéances OVERDUE puis SOON de tous les véhicules actifs accessibles.
+          items:
+            $ref: '#/components/schemas/VehicleDueItem'
+        mileageReadings:
+          type: array
+          description: Véhicules actifs sans kilométrage saisi depuis plus de 30 jours (FR-035).
+          items:
+            $ref: '#/components/schemas/MileageReadingReminder'
+
+    DocumentContentType:
+      type: string
+      enum: [application/pdf, image/jpeg, image/png, image/webp]
+    Document:
+      type: object
+      required: [id, recordId, fileName, contentType, sizeBytes, authorName, canDelete, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        recordId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+          description: Nom d'origine, nettoyé.
+        contentType:
+          $ref: '#/components/schemas/DocumentContentType'
+        sizeBytes:
+          type: integer
+          format: int64
+        authorName:
+          type: string
+        canDelete:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time

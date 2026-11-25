@@ -2,19 +2,24 @@ package fr.carsupervision.vehicle;
 
 import fr.carsupervision.api.model.FieldError;
 import fr.carsupervision.api.model.VehicleInput;
+import fr.carsupervision.common.Formats;
 import fr.carsupervision.common.Normalizers;
 import fr.carsupervision.common.error.ApiException;
 import fr.carsupervision.common.error.ErrorCode;
+import fr.carsupervision.common.time.Today;
 import fr.carsupervision.security.AuthenticatedMember;
 import fr.carsupervision.security.CurrentMember;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,14 +41,19 @@ public class VehicleService {
     private final VehicleAccessGuard accessGuard;
     private final CurrentMember currentMember;
     private final Clock clock;
+    private final Today today;
+    private final ObjectProvider<VehicleMileageFloor> mileageFloor;
 
     public VehicleService(VehicleRepository vehicleRepository, VehicleMapper vehicleMapper,
-            VehicleAccessGuard accessGuard, CurrentMember currentMember, Clock clock) {
+            VehicleAccessGuard accessGuard, CurrentMember currentMember, Clock clock, Today today,
+            ObjectProvider<VehicleMileageFloor> mileageFloor) {
         this.vehicleRepository = vehicleRepository;
         this.vehicleMapper = vehicleMapper;
         this.accessGuard = accessGuard;
         this.currentMember = currentMember;
         this.clock = clock;
+        this.today = today;
+        this.mileageFloor = mileageFloor;
     }
 
     /**
@@ -77,19 +87,51 @@ public class VehicleService {
         if (vehicleRepository.existsByRegistrationKey(vehicle.getRegistrationKey())) {
             throw registrationAlreadyExists();
         }
+        vehicle.setCurrentMileage(vehicle.getInitialMileageKm(), today.date());
         return vehicleRepository.saveAndFlush(vehicle);
     }
 
     /** Remplace toutes les informations du véhicule ; le statut est inchangé. */
     @Transactional
     public Vehicle update(UUID id, VehicleInput input) {
-        Vehicle vehicle = find(id);
+        Vehicle vehicle = vehicleRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> ApiException.notFound("Ce véhicule n'existe pas."));
         apply(input, vehicle);
         if (vehicleRepository.existsByRegistrationKeyAndIdNot(vehicle.getRegistrationKey(), id)) {
             throw registrationAlreadyExists();
         }
+        applyInitialMileage(vehicle);
         vehicle.setUpdatedAt(OffsetDateTime.now(clock));
         return vehicleRepository.saveAndFlush(vehicle);
+    }
+
+    /**
+     * Met à jour le kilométrage actuel, recalculé par le module maintenance dans sa transaction
+     * (le véhicule est déjà verrouillé par {@link VehicleAccessGuard#lockForWrite}).
+     */
+    @Transactional
+    public void updateCurrentMileage(UUID vehicleId, int mileageKm, LocalDate date) {
+        Vehicle vehicle = find(vehicleId);
+        if (vehicle.getCurrentMileageKm() != mileageKm || !date.equals(vehicle.getCurrentMileageDate())) {
+            vehicle.setCurrentMileage(mileageKm, date);
+            vehicle.setUpdatedAt(OffsetDateTime.now(clock));
+        }
+    }
+
+    /**
+     * Kilométrage de départ modifié : il ne peut pas dépasser le plus petit kilométrage saisi
+     * (FR-009) ; sans aucune saisie, le kilométrage actuel le suit.
+     */
+    private void applyInitialMileage(Vehicle vehicle) {
+        VehicleMileageFloor floor = mileageFloor.getIfAvailable();
+        OptionalInt lowest = floor == null ? OptionalInt.empty() : floor.lowestRecordedMileage(vehicle.getId());
+        if (lowest.isEmpty()) {
+            vehicle.setCurrentMileage(vehicle.getInitialMileageKm(), vehicle.getCurrentMileageDate());
+        } else if (vehicle.getInitialMileageKm() > lowest.getAsInt()) {
+            throw ApiException.conflict(ErrorCode.INITIAL_MILEAGE_ABOVE_RECORDS,
+                    "Le kilométrage de départ ne peut pas dépasser le plus petit kilométrage déjà saisi ("
+                            + Formats.km(lowest.getAsInt()) + ").");
+        }
     }
 
     /** Idempotent : archiver un véhicule déjà archivé le renvoie tel quel. */

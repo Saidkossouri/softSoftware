@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Suivi du kilométrage et historique des entretiens
+# Specification Quality Checklist: Kilométrage, entretiens, échéances et justificatifs
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-11-25
@@ -33,7 +33,11 @@
 
 - Le code 403 et la distinction ADMIN/USER viennent de la constitution (principe IV) et de la
   fonctionnalité 001, pas d'un choix d'implémentation.
-- Aucun marqueur [NEEDS CLARIFICATION] : le choix de périmètre (échéances en 003, factures en
-  004) est soumis au mainteneur ; les autres choix par défaut (liste fixe d'opérations, droits
-  de modification réservés à l'auteur et à l'ADMIN, seuil de confirmation à 100 000 km, coût
-  total unique) sont dans Assumptions et FR, révisables avec `/speckit-clarify`.
+- Aucun marqueur [NEEDS CLARIFICATION] : le périmètre complet (kilométrage, entretiens,
+  échéances, justificatifs) a été choisi par le mainteneur le 2026-11-25. Les autres choix par
+  défaut (liste fixe d'opérations et d'intervalles, droits de modification réservés à l'auteur
+  et à l'ADMIN, seuils « Bientôt » à 30 jours ou 1 000 km, rappels dans l'application seulement,
+  formats et limite de 10 Mo des justificatifs) sont dans Assumptions et FR, révisables avec
+  `/speckit-clarify`.
+- « 10 Mo », « PDF/JPEG/PNG/WebP » sont des limites fonctionnelles visibles de l'utilisateur, pas
+  des choix techniques ; le stockage (disque ou bucket) relève du plan.

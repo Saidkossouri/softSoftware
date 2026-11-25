@@ -10,7 +10,7 @@ Testcontainers, React, shadcn/ui) est celui de la fonctionnalité 001
 ## R1. Découpage en modules Gradle
 
 - **Décision** : trois nouveaux sous-projets dans `backend/`, en plus de `vehicle` :
-  - `maintenance` : relevés kilométriques, entretiens, liste des opérations, historique et
+  - `maintenance` : relevés kilométriques, entretiens, catalogue des types d'entretien, historique et
     totaux, règles de cohérence du kilométrage ;
   - `schedule` : règles d'échéance, échéances à date fixe, calcul des échéances, rappels de
     l'accueil (dont le rappel de relevé) ;
@@ -124,7 +124,10 @@ Testcontainers, React, shadcn/ui) est celui de la fonctionnalité 001
 
 - **Décision** : coût en centimes (`cost_cents integer`, `costCents` dans le contrat) ; totaux
   calculés en base (`sum`) sur des entiers. Le frontend convertit la saisie « 189,50 » en 18950
-  et affiche avec `Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' })`.
+  et affiche en dirhams : `Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2,
+  maximumFractionDigits: 2 })` suivi de « DH » (« 1 234,50 DH »), l'écriture courante au
+  Maroc ; `currency: 'MAD'` afficherait « MAD », moins naturel. Une seule devise, pas de
+  colonne devise.
 - **Justification** : aucun arrondi possible (SC-006) ; les entiers passent sans perte en JSON
   et en TypeScript.
 - **Alternatives écartées** : `number` décimal en JSON (risque d'arrondi en JavaScript) ;
@@ -133,47 +136,52 @@ Testcontainers, React, shadcn/ui) est celui de la fonctionnalité 001
 ## R8. Dates « du jour » et fuseau horaire
 
 - **Décision** : nouveau composant `common.time.Today` qui donne la date du jour dans le fuseau
-  `app.time-zone` (par défaut `Europe/Paris`) à partir de l'horloge partagée. Il sert aux
+  `app.time-zone` (par défaut `Africa/Casablanca`) à partir de l'horloge partagée. Il sert aux
   contrôles « pas dans le futur », à l'année des totaux et au calcul des échéances.
-- **Justification** : l'horloge est en UTC ; un relevé saisi à 00 h 30 à Paris ne doit pas être
-  refusé comme « dans le futur ». Les tests fixent l'horloge.
+- **Justification** : l'horloge est en UTC ; un relevé saisi à 00 h 30 au Maroc (UTC+1) ne doit pas être
+  refusé comme « dans le futur ». `Africa/Casablanca` suit le retour à UTC+0 pendant le
+  ramadan (base tzdata du JDK, à garder à jour). Les tests fixent l'horloge.
 
-## R9. Liste des opérations et intervalles par défaut
+## R9. Catalogue des types d'entretien géré par l'ADMIN
 
-- **Décision** : énumération `OperationType` dans le contrat ; les intervalles par défaut sont
-  une table en code dans `maintenance` (`OperationCatalog`), exposée par
-  `GET /api/operation-types`. Libellés uniquement dans `frontend/src/i18n/fr.ts`.
-
-  | Code | Libellé | Défaut |
-  |---|---|---|
-  | `SERVICE` | Révision | 15 000 km ou 12 mois |
-  | `OIL_CHANGE` | Vidange | 15 000 km ou 12 mois |
-  | `OIL_FILTER` | Filtre à huile | 15 000 km ou 12 mois |
-  | `AIR_FILTER` | Filtre à air | 30 000 km ou 24 mois |
-  | `CABIN_FILTER` | Filtre d'habitacle | 15 000 km ou 12 mois |
-  | `FUEL_FILTER` | Filtre à carburant | 60 000 km ou 48 mois |
-  | `TIRES` | Pneus | 40 000 km |
-  | `BRAKES` | Freins | 30 000 km |
-  | `TIMING_BELT` | Distribution | 120 000 km ou 60 mois |
-  | `BATTERY` | Batterie | 60 mois |
-  | `AIR_CONDITIONING` | Climatisation | 24 mois |
-  | `TECHNICAL_INSPECTION` | Contrôle technique | 24 mois |
-  | `REPAIR` | Réparation | aucun |
-  | `OTHER` | Autre (description obligatoire) | aucun |
-
-  Les opérations d'un entretien sont stockées dans une table d'association
-  (`maintenance_record_operation`), indexée par opération pour le filtre (FR-016) et la
-  recherche de la dernière réalisation (R10).
-- **Justification** : la spec fixe la liste ; un référentiel en base géré par l'ADMIN n'est pas
-  demandé (Assumptions). Ces valeurs ne sont que des propositions modifiables règle par règle.
-- **Alternatives écartées** : table de référence en base (écrans ADMIN en plus, non demandés) ;
-  colonne tableau PostgreSQL (filtre moins lisible en JPA).
+- **Décision** (choisie par le mainteneur le 2026-11-25, remplace la liste fixe initiale) :
+  table `maintenance_type` dans le module `maintenance`, avec deux catégories :
+  `MAINTENANCE` (opérations d'un entretien, point d'accroche des règles, fréquence en km et/ou
+  en mois, option « description obligatoire ») et `ADMINISTRATIVE` (modèles d'échéances à date
+  fixe : fréquence en mois, âge du véhicule à partir duquel l'échéance est suggérée). Écran
+  ADMIN « Types d'entretien » ; endpoints `GET /api/maintenance-types` (tout membre, types
+  actifs), `POST`/`PUT` et `deactivate`/`reactivate` réservés aux ADMIN
+  (`@PreAuthorize("hasRole('ADMIN')")`). Pas de suppression : un type désactivé reste lié aux
+  saisies existantes. Catalogue pré-rempli par le changeset (identifiants fixes) avec des
+  valeurs marocaines ([data-model](./data-model.md)).
+- **Liens** : les entretiens, règles et échéances référencent le type par identifiant
+  (`maintenance_record_type`, `maintenance_rule.type_id`, `deadline.type_id`) ; le contrat
+  renvoie un `TypeRef { id, name, active }` pour qu'un renommage s'affiche partout. Une règle
+  copie la fréquence à sa création : changer le catalogue ne modifie pas les règles existantes
+  (FR-022), ce qui évite des échéances qui bougent sans action du membre.
+- **Libellés** : les noms de types sont des données saisies par l'ADMIN, pas des libellés
+  d'interface ; la règle « libellés uniquement dans `i18n/fr.ts` » continue de s'appliquer à
+  tout le reste (titres, boutons, catégories, messages).
+- **Suggestions administratives (FR-040)** : calculées à la lecture
+  (`GET /api/vehicles/{id}/deadline-suggestions`) : types `ADMINISTRATIVE` actifs dont
+  `suggest_from_age_years ≤ année en cours − first_registration_year` (âge 0 : tout véhicule,
+  même sans année), sans échéance à faire de ce type, et non ignorés (table
+  `deadline_suggestion_dismissal`). Accepter une suggestion ouvre le formulaire d'échéance
+  pré-rempli ; rien n'est créé automatiquement.
+- **Justification** : les fréquences dépendent du pays et des véhicules (le mainteneur est au
+  Maroc : vidange à 10 000 km, visite technique annuelle dès 5 ans) ; la constitution prévoit
+  que l'ADMIN gère les référentiels. Le faire avant la première ligne de code évite une
+  migration de données.
+- **Alternatives écartées** : liste fixe en code (choix initial, ne permet pas d'adapter les
+  fréquences) ; fréquences par modèle de véhicule (complexité non demandée) ; règles créées
+  automatiquement pour chaque véhicule à partir du catalogue (échéances imposées que la famille
+  n'a pas choisies ; la suggestion explicite est plus prévisible).
 
 ## R10. Calcul des échéances (FR-023, FR-024, principe V)
 
-- **Décision** : calcul à la lecture, jamais stocké. Pour une règle `(opération, intervalKm?,
+- **Décision** : calcul à la lecture, jamais stocké. Pour une règle `(type, intervalKm?,
   intervalMonths?, baselineDate, baselineKm)` :
-  1. **Dernière réalisation** : l'entretien le plus récent du véhicule comportant l'opération
+  1. **Dernière réalisation** : l'entretien le plus récent du véhicule comportant le type
      (date, puis kilométrage) s'il est daté au plus tôt du point de départ ; sinon le point de
      départ de la règle. Un entretien rétroactif plus ancien que la dernière réalisation ne
      change donc rien ; la suppression de l'entretien de référence fait revenir à la
@@ -274,7 +282,7 @@ Testcontainers, React, shadcn/ui) est celui de la fonctionnalité 001
 
 - **Décision** : contrat 0.2.0 dans [contracts/openapi.yaml](./contracts/openapi.yaml), à
   recopier dans `backend/api-contract/src/main/resources/openapi/openapi.yaml` en première
-  tâche. Ajouts : 18 chemins, 9 codes d'erreur, `Vehicle.currentMileage`. Choix notables :
+  tâche. Ajouts : 23 chemins, 10 codes d'erreur, `Vehicle.currentMileage`. Choix notables :
   historique « à plat » (`HistoryEntry` avec `kind`) plutôt qu'un `oneOf`, mal géré par
   openapi-generator ; `DueItem` à plat pour la même raison ; `canEdit` / `canDelete` calculés
   pour le membre connecté ; envoi `multipart/form-data` (paramètre `MultipartFile` généré) et
@@ -300,9 +308,10 @@ requête et réponse contre le contrat, horloge fixée) :
   bout en bout : scénarios US4-1 à US4-8 de la spec, dont l'entretien qui relance une
   échéance, la suppression de l'entretien de référence, l'échéance récurrente et le rappel de
   relevé à 30 jours.
+- **Catalogue** : catalogue pré-rempli présent après migration, création, renommage visible dans l'historique, doublon de nom (casse ignorée) → 409, désactivation (plus proposé, toujours affiché), champs incompatibles avec la catégorie → 400, toute écriture par un USER → 403, changement de fréquence sans effet sur une règle existante, suggestions selon l'âge (4 ans : pas de visite technique ; 5 ans : suggérée) et après « ignorer ».
 - **Justificatifs** : formats acceptés et refusés (signature), 10 Mo, limite de 10, nom
   d'origine dans `Content-Disposition`, suppression d'un entretien qui efface ses fichiers
   (stockage local dans un dossier temporaire de test).
 - **Frontend** (Vitest + Testing Library) : formats français des montants et kilométrages,
-  formulaire d'entretien (opération « Autre », confirmation de grand écart), affichage des
+  formulaire d'entretien (type à description obligatoire, confirmation de grand écart), affichage des
   états d'échéance.

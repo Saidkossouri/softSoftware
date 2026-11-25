@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Fonctionnalité 002 : suivi du kilométrage et historique des entretiens par véhicule. Les membres relèvent le kilométrage de leurs véhicules et enregistrent les entretiens réalisés (type, date, kilométrage, coût, garage), sur les seuls véhicules auxquels ils ont accès. Périmètre étendu par le mainteneur (2026-11-25) : la fonctionnalité inclut aussi les échéances et rappels (par date ou par kilométrage) et les justificatifs (factures en PDF, photos)."
+**Input**: User description: "Fonctionnalité 002 : suivi du kilométrage et historique des entretiens par véhicule. Les membres relèvent le kilométrage de leurs véhicules et enregistrent les entretiens réalisés (type, date, kilométrage, coût, garage), sur les seuls véhicules auxquels ils ont accès. Périmètre étendu par le mainteneur (2026-11-25) : la fonctionnalité inclut aussi les échéances et rappels (par date ou par kilométrage) et les justificatifs (factures en PDF, photos), puis un catalogue des types d'entretien et des échéances administratives (assurance, vignette, visite technique) géré par l'ADMIN."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -52,7 +52,7 @@ saisi compte aussi comme un relevé du véhicule.
 donnée dont les futures échéances auront besoin (« dernière vidange à telle date et tel
 kilométrage »).
 
-**Independent Test**: enregistrer une révision (vidange + filtres, 189 €, garage « Garage du
+**Independent Test**: enregistrer une révision (vidange + filtres, 450 DH, garage « Garage du
 Centre ») sur un véhicule autorisé, puis la retrouver dans l'historique du véhicule avec toutes
 ses informations.
 
@@ -60,7 +60,7 @@ ses informations.
 
 1. **Given** un USER autorisé sur le véhicule A, **When** il enregistre un entretien daté du
    jour, à 52 000 km, avec les opérations « Vidange » et « Filtre à huile », un coût de
-   189,00 € et le garage « Garage du Centre », **Then** l'entretien apparaît en tête de
+   450,00 DH et le garage « Garage du Centre », **Then** l'entretien apparaît en tête de
    l'historique de A avec ces informations et l'auteur de la saisie.
 2. **Given** ce même entretien à 52 000 km plus récent que le dernier relevé, **When** il est
    enregistré, **Then** le kilométrage actuel de A passe à 52 000 km.
@@ -96,9 +96,9 @@ vérifier l'ordre chronologique, les totaux et le filtre « Vidange ».
 1. **Given** un véhicule avec des entretiens et des relevés, **When** un membre autorisé ouvre
    sa fiche, **Then** il voit le kilométrage actuel, la date du dernier relevé et l'historique
    du plus récent au plus ancien.
-2. **Given** des entretiens de 120 € et 300 € cette année et de 450 € l'année dernière, **When**
-   le membre consulte la fiche, **Then** il voit un total de 420 € pour l'année en cours et
-   870 € depuis le début du suivi ; les entretiens sans coût ne sont pas comptés.
+2. **Given** des entretiens de 300 DH et 800 DH cette année et de 1 200 DH l'année dernière, **When**
+   le membre consulte la fiche, **Then** il voit un total de 1 100 DH pour l'année en cours et
+   2 300 DH depuis le début du suivi ; les entretiens sans coût ne sont pas comptés.
 3. **Given** l'historique d'un véhicule, **When** le membre filtre sur « Vidange », **Then**
    seuls les entretiens comportant une vidange sont affichés, le plus récent en premier.
 4. **Given** un véhicule sans aucune saisie, **When** un membre ouvre sa fiche, **Then** il
@@ -112,9 +112,9 @@ vérifier l'ordre chronologique, les totaux et le filtre « Vidange ».
 ### User Story 4 - Être prévenu des prochaines échéances (Priority: P4)
 
 Pour chaque véhicule, un membre définit le plan d'entretien : quelles opérations reviennent et
-à quel rythme (par exemple vidange tous les 15 000 km ou tous les 12 mois, au premier des deux
-termes atteint ; contrôle technique tous les 24 mois). Il peut aussi créer des échéances à date
-fixe, comme le renouvellement de l'assurance. L'application calcule la prochaine échéance de
+à quel rythme (par exemple vidange tous les 10 000 km ou tous les 12 mois, au premier des deux
+termes atteint). Il crée aussi les échéances administratives à date fixe (assurance, vignette,
+visite technique), proposées d'après le catalogue de l'ADMIN. L'application calcule la prochaine échéance de
 chaque élément à partir du dernier entretien correspondant, et l'accueil signale ce qui arrive
 bientôt ou est en retard sur ses véhicules.
 
@@ -151,6 +151,10 @@ et vérifier que l'échéance repart.
    « Pense à relever le kilométrage » pour ce véhicule, avec la date et la valeur du dernier
    relevé et un accès direct à la saisie ; le rappel disparaît dès qu'un relevé ou un entretien
    plus récent est enregistré.
+9. **Given** un véhicule mis en circulation il y a 5 ans ou plus, sans échéance « Visite
+   technique » à faire, **When** un membre ouvre sa fiche, **Then** une suggestion l'invite à
+   créer cette échéance, pré-remplie d'après le catalogue (récurrence 12 mois) ; de même pour
+   « Assurance » et « Vignette » sur tout véhicule qui n'en a pas.
 
 ---
 
@@ -184,6 +188,45 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
    (après confirmation), **Then** il disparaît de l'entretien et n'est plus téléchargeable.
 6. **Given** un entretien avec des justificatifs, **When** l'entretien est supprimé, **Then**
    ses justificatifs sont supprimés avec lui, après une confirmation qui en indique le nombre.
+
+---
+
+### User Story 6 - Configurer le catalogue des types d'entretien (Priority: P6)
+
+L'administrateur gère le catalogue des types d'entretien utilisés partout dans l'application :
+nom, catégorie (Entretien ou Administratif), fréquence recommandée en kilomètres et/ou en mois,
+et, pour les types administratifs, l'âge du véhicule à partir duquel l'échéance est proposée.
+Il peut ajouter un type, le renommer, changer ses fréquences, et désactiver un type qui ne sert
+plus. Le catalogue est livré pré-rempli avec des valeurs adaptées au Maroc, ce qui permet
+d'utiliser les histoires 2 à 4 sans aucune configuration.
+
+**Why this priority**: les fréquences recommandées dépendent du pays, des véhicules et des
+habitudes de la famille ; le catalogue pré-rempli suffit pour démarrer, l'écran d'administration
+permet ensuite de l'ajuster sans modifier l'application.
+
+**Independent Test**: en ADMIN, passer la fréquence de la vidange à 8 000 km, créer le type
+« Courroie d'accessoires » (60 000 km), désactiver « Climatisation », puis vérifier qu'un
+membre voit ces changements dans le formulaire d'entretien et lors de la création d'une règle.
+
+**Acceptance Scenarios**:
+
+1. **Given** une installation neuve, **When** un membre ouvre le formulaire d'entretien,
+   **Then** il voit les types du catalogue pré-rempli, dont « Vidange » (10 000 km ou 12 mois),
+   et dans les échéances administratives « Assurance », « Vignette » et « Visite technique ».
+2. **Given** un ADMIN, **When** il change la fréquence de « Vidange » en 8 000 km, **Then** la
+   création d'une nouvelle règle « Vidange » propose 8 000 km ; les règles déjà créées gardent
+   leurs propres intervalles.
+3. **Given** un ADMIN, **When** il ajoute le type « Courroie d'accessoires » (Entretien,
+   60 000 km), **Then** il peut être choisi dans les entretiens et les règles.
+4. **Given** un type déjà utilisé, **When** l'ADMIN le renomme, **Then** le nouveau nom
+   s'affiche partout, y compris dans l'historique.
+5. **Given** un type déjà utilisé, **When** l'ADMIN le désactive, **Then** il n'est plus
+   proposé pour les nouvelles saisies mais reste affiché sur les entretiens, règles et
+   échéances existants ; il peut être réactivé. Aucun type n'est supprimé.
+6. **Given** un nom déjà présent dans le catalogue (quelle que soit la casse), **When** l'ADMIN
+   l'ajoute à nouveau, **Then** l'ajout est refusé avec un message indiquant le doublon.
+7. **Given** un USER, **When** il tente de modifier le catalogue (écran ou service), **Then**
+   l'accès est refusé (403) ; il peut seulement le consulter.
 
 ---
 
@@ -265,13 +308,12 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
 
 - **FR-010**: Un membre DOIT pouvoir enregistrer un entretien avec : date (obligatoire, pas dans
   le futur), kilométrage (obligatoire, soumis aux mêmes règles de cohérence que les relevés),
-  une ou plusieurs opérations (obligatoire), coût total TTC en euros (facultatif, positif ou
+  une ou plusieurs opérations (obligatoire), coût total TTC en dirhams (facultatif, positif ou
   nul, 2 décimales au plus), garage ou intervenant (facultatif, texte libre, « Moi-même »
   possible) et remarques (facultatives).
-- **FR-011**: Les opérations DOIVENT être choisies dans une liste fixe : Révision, Vidange,
-  Filtre à huile, Filtre à air, Filtre d'habitacle, Filtre à carburant, Pneus, Freins,
-  Distribution, Batterie, Climatisation, Contrôle technique, Réparation, Autre. L'opération
-  « Autre » DOIT être accompagnée d'une description.
+- **FR-011**: Les opérations d'un entretien DOIVENT être choisies parmi les types actifs de
+  catégorie Entretien du catalogue (FR-036). Un type marqué « description obligatoire » (par
+  exemple « Autre ») DOIT être accompagné d'une description.
 - **FR-012**: Chaque relevé et chaque entretien DOIT conserver son auteur et ses dates de
   création et de dernière modification.
 - **FR-013**: La suppression d'un entretien ou d'un relevé DOIT être confirmée par
@@ -294,18 +336,18 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
 
 - **FR-019**: Les saisies de relevé et d'entretien DOIVENT être utilisables d'une main sur
   téléphone (largeur 360 px), avec un clavier numérique pour les kilométrages et montants.
-- **FR-020**: Les montants DOIVENT être affichés au format français (`1 234,50 €`) et les
+- **FR-020**: Les montants DOIVENT être affichés en dirhams (`1 234,50 DH`) et les
   kilométrages avec séparateur de milliers (`52 000 km`) ; les messages d'erreur sont en
   français et indiquent quoi faire.
 
 **Échéances**
 
 - **FR-021**: Tout membre ayant accès à un véhicule DOIT pouvoir définir, modifier et supprimer
-  les règles d'échéance de ce véhicule. Une règle porte sur une opération de la liste et fixe
+  les règles d'échéance de ce véhicule. Une règle porte sur un type de catégorie Entretien et fixe
   un intervalle en kilomètres, en mois, ou les deux (« au premier des deux termes atteint »).
-- **FR-022**: À la création d'une règle, le système DOIT proposer un intervalle par défaut selon
-  l'opération (par exemple Vidange : 15 000 km ou 12 mois ; Contrôle technique : 24 mois ;
-  Distribution : 120 000 km ou 60 mois), modifiable par le membre.
+- **FR-022**: À la création d'une règle, le système DOIT proposer la fréquence recommandée du
+  type dans le catalogue (par exemple Vidange : 10 000 km ou 12 mois), modifiable par le membre.
+  Changer ensuite la fréquence dans le catalogue NE DOIT PAS modifier les règles existantes.
 - **FR-023**: La prochaine échéance d'une règle DOIT être calculée à partir de la réalisation la
   plus récente de l'opération (le dernier entretien qui la comporte, sinon le point de départ
   saisi à la création de la règle) : date de réalisation + intervalle en mois, et kilométrage de
@@ -313,10 +355,11 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
 - **FR-024**: Chaque échéance DOIT avoir un état : « En retard » (date dépassée ou kilométrage
   actuel atteint), « Bientôt » (moins de 30 jours ou moins de 1 000 km restants) ou « À jour » ;
   avec deux termes, c'est le plus défavorable qui l'emporte.
-- **FR-025**: Un membre DOIT pouvoir créer des échéances à date fixe, sans opération ni
-  kilométrage (assurance, vignette, abonnement…), avec un libellé, une date et une récurrence
-  facultative en mois ou en années ; marquer une telle échéance comme faite crée la suivante si
-  elle est récurrente.
+- **FR-025**: Un membre DOIT pouvoir créer des échéances à date fixe, sans kilométrage, soit à
+  partir d'un type de catégorie Administratif (assurance, vignette, visite technique : libellé
+  et récurrence pré-remplis depuis le catalogue), soit avec un libellé libre ; avec une date et
+  une récurrence facultative en mois ou en années. Marquer une telle échéance comme faite crée
+  la suivante si elle est récurrente.
 - **FR-026**: Les échéances DOIVENT être recalculées immédiatement après toute saisie,
   modification ou suppression de relevé, d'entretien ou de règle.
 - **FR-027**: La fiche d'un véhicule DOIT lister ses échéances, en retard d'abord puis par
@@ -349,6 +392,30 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
 - **FR-034**: Les justificatifs DOIVENT être conservés durablement, indépendamment des
   redémarrages ou mises à jour de l'application.
 
+**Catalogue des types d'entretien**
+
+- **FR-036**: Le système DOIT gérer un catalogue de types d'entretien : nom (obligatoire, unique
+  sans tenir compte de la casse, 60 caractères au plus), catégorie (Entretien ou Administratif),
+  fréquence recommandée en kilomètres (Entretien seulement) et/ou en mois (facultatives),
+  « description obligatoire » (Entretien seulement), âge du véhicule en années à partir duquel
+  l'échéance est suggérée (Administratif seulement, facultatif), ordre d'affichage, et statut
+  actif ou désactivé.
+- **FR-037**: Un ADMIN DOIT pouvoir lister (actifs et désactivés), ajouter, modifier (y compris
+  renommer) et désactiver ou réactiver un type ; la catégorie d'un type ne change plus une fois
+  créé ; aucun type n'est supprimé. Toute modification du catalogue par un USER DOIT être
+  refusée (403) côté serveur.
+- **FR-038**: Tout membre DOIT pouvoir consulter les types actifs ; un type désactivé NE DOIT
+  plus être proposé pour une nouvelle saisie mais DOIT rester affiché, sous son nom actuel, sur
+  les entretiens, règles et échéances qui l'utilisent.
+- **FR-039**: Le catalogue DOIT être pré-rempli à l'installation avec des valeurs adaptées au
+  Maroc (voir Assumptions), de sorte que les histoires 2 à 4 fonctionnent sans configuration.
+- **FR-040**: La fiche d'un véhicule actif DOIT suggérer, pour chaque type Administratif actif
+  dont l'âge de suggestion est atteint (âge = année en cours − année de mise en circulation ;
+  un âge de suggestion de 0 vaut pour tout véhicule) et pour lequel le véhicule n'a aucune
+  échéance à faire de ce type, la création de l'échéance pré-remplie ; la suggestion peut être
+  ignorée pour ce véhicule. Un véhicule sans année de mise en circulation ne reçoit que les
+  suggestions d'âge 0.
+
 ### Key Entities
 
 - **Relevé kilométrique** : un kilométrage constaté sur un véhicule à une date. Véhicule, date,
@@ -357,13 +424,16 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
   opérations (une ou plusieurs), description (obligatoire pour « Autre »), coût total,
   garage ou intervenant, remarques, auteur, dates de création et de modification. Son
   kilométrage participe au calcul du kilométrage actuel au même titre qu'un relevé.
-- **Opération** : un élément de la liste fixe des natures d'entretien (vidange, pneus,
-  contrôle technique…). Elle sert de point d'accroche aux règles d'échéance.
+- **Type d'entretien** : un élément du catalogue géré par l'ADMIN. Nom, catégorie (Entretien ou
+  Administratif), fréquence recommandée en kilomètres et/ou en mois, description obligatoire,
+  âge de suggestion, ordre, statut actif. Les types Entretien sont les « opérations » d'un
+  entretien et le point d'accroche des règles ; les types Administratif servent de modèles aux
+  échéances à date fixe.
 - **Règle d'échéance** : le rythme d'une opération sur un véhicule. Véhicule, opération,
   intervalle en kilomètres et/ou en mois, point de départ (date et kilométrage de la dernière
   réalisation connue avant tout entretien enregistré), auteur.
-- **Échéance à date fixe** : une obligation datée sans kilométrage. Véhicule, libellé, date,
-  récurrence facultative, état (à faire ou faite).
+- **Échéance à date fixe** : une obligation datée sans kilométrage. Véhicule, type Administratif
+  facultatif, libellé, date, récurrence facultative, état (à faire ou faite).
 - **Échéance calculée** (non saisie) : pour chaque règle, la prochaine date et/ou le prochain
   kilométrage, l'état (En retard, Bientôt, À jour) et ce qui reste.
 - **Justificatif** : un fichier rattaché à un entretien. Entretien, nom d'origine, format,
@@ -401,6 +471,11 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
 - **SC-011**: 100 % des véhicules actifs sans kilométrage depuis plus de 30 jours affichent le
   rappel de relevé sur l'accueil des membres qui y ont accès, et aucun véhicule relevé dans les
   30 derniers jours ne l'affiche.
+- **SC-012**: Un ADMIN ajoute un type d'entretien ou change une fréquence recommandée en moins
+  de 1 minute, et le changement est proposé dès la saisie suivante d'un membre, sans
+  redémarrage ni intervention technique.
+- **SC-013**: 100 % des véhicules actifs de 5 ans ou plus sans visite technique à faire
+  affichent la suggestion correspondante, et aucun véhicule plus jeune ne l'affiche.
 
 ## Assumptions
 
@@ -415,11 +490,21 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
   risque d'un kilométrage périmé.
 - L'état « Bientôt » se fonde sur le dernier kilométrage connu ; il n'y a pas d'estimation du
   kilométrage futur à partir du rythme de roulage.
-- La liste des opérations et leurs intervalles par défaut sont fixes. Leur gestion par l'ADMIN
-  (référentiel prévu par la constitution) n'est pas nécessaire tant que la liste suffit ; les
-  intervalles restent ajustables règle par règle sur chaque véhicule.
-- L'assurance n'est pas un entretien (pas de kilométrage) : elle se suit comme une échéance à
-  date fixe.
+- Catalogue pré-rempli (valeurs indicatives pour le Maroc, modifiables par l'ADMIN) :
+  - Entretien : Vidange (10 000 km ou 12 mois), Filtre à huile (10 000 km ou 12 mois), Filtre à
+    air (20 000 km ou 24 mois), Filtre d'habitacle (15 000 km ou 12 mois), Filtre à carburant
+    (40 000 km ou 24 mois), Révision (20 000 km ou 12 mois), Pneus (40 000 km), Freins
+    (30 000 km), Distribution (80 000 km ou 60 mois), Batterie (48 mois), Climatisation
+    (24 mois), Réparation (sans fréquence), Autre (sans fréquence, description obligatoire) ;
+  - Administratif : Assurance (12 mois, suggérée pour tout véhicule), Vignette (12 mois,
+    suggérée pour tout véhicule), Visite technique (12 mois, suggérée à partir de 5 ans).
+- La règle « visite technique annuelle à partir de 5 ans » reflète la pratique marocaine
+  indiquée par le mainteneur ; elle n'est qu'une suggestion paramétrable, l'application ne
+  vérifie aucune réglementation.
+- L'assurance, la vignette et la visite technique ne sont pas des entretiens (pas de
+  kilométrage) : elles se suivent comme des échéances à date fixe.
+- Le catalogue est commun à tous les véhicules ; il n'y a pas de fréquence recommandée par
+  modèle de véhicule (les intervalles restent ajustables règle par règle).
 - Les justificatifs se rattachent aux entretiens ; les documents propres au véhicule (carte
   grise, attestation d'assurance) ne sont pas gérés dans cette fonctionnalité.
 - Pas de lecture automatique du contenu des factures (montant, garage) : le membre saisit ces
@@ -427,7 +512,11 @@ autorisé ne peut pas les obtenir, même avec leur adresse directe.
 - Un entretien a un seul coût total ; la ventilation du coût par opération n'est pas
   nécessaire pour un usage familial.
 - Le garage est un texte libre ; il n'y a pas de carnet d'adresses de garages.
-- Les montants sont en euros uniquement.
+- Les montants sont en dirhams marocains (MAD, affichés « DH ») uniquement ; la date du jour
+  est celle du Maroc (fuseau `Africa/Casablanca`, qui suit le passage à UTC+0 pendant le
+  ramadan).
+- Au Maroc la vignette se paie en janvier : le membre fixe la date de l'échéance « Vignette »
+  (par exemple le 31 janvier) en acceptant la suggestion ; aucune date n'est imposée.
 - La consommation de carburant (pleins) n'est pas suivie.
 - Pas d'export (CSV, PDF) ni de graphique dans cette fonctionnalité.
 - Volumétrie conforme à la constitution : quelques centaines de saisies par véhicule au plus ;

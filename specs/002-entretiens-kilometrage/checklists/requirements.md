@@ -41,3 +41,7 @@
   `/speckit-clarify`.
 - « 10 Mo », « PDF/JPEG/PNG/WebP » sont des limites fonctionnelles visibles de l'utilisateur, pas
   des choix techniques ; le stockage (disque ou bucket) relève du plan.
+- 2026-11-25 : catalogue des types d'entretien géré par l'ADMIN (US6, FR-036 à FR-040) ajouté
+  par décision du mainteneur ; il remplace la liste fixe d'opérations et apporte les échéances
+  administratives (assurance, vignette, visite technique dès 5 ans). Revalidé : tous les points
+  restent cochés.

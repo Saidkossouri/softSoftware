@@ -247,7 +247,7 @@ seule.
 - [X] T087 Vérifier que chaque méthode des contrôleurs ADMIN porte `@PreAuthorize("hasRole('ADMIN')")` et qu'aucun `@RequestMapping` n'existe hors des interfaces générées (revue de `backend/*/src/main/java/fr/carsupervision/`) ; corriger les écarts
 - [X] T088 Vérifier l'affichage à 360 px de large de chaque écran (connexion, accès refusé, mes véhicules, détail, membres, édition membre, parc, formulaire véhicule) et corriger les débordements dans `frontend/src/` (fait : tuiles de l'accueil élargies par un long surnom, grilles en `grid-cols-1`)
 - [X] T089 Dérouler les 16 scénarios de `specs/001-acces-membres-flotte/quickstart.md` et corriger les écarts constatés (fait : chaque scénario est relié à ses tests automatiques ; restent manuels 2, 3 et 5, avec de vrais comptes Google)
-- [ ] T090 Vérifier que la CI `.github/workflows/ci.yml` passe sur la PR d'implémentation (génération OpenAPI, build, tests, image Docker)
+- [X] T090 Vérifier que la CI `.github/workflows/ci.yml` passe sur la PR d'implémentation (génération OpenAPI, build, tests, image Docker)
 
 ---
 

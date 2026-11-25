@@ -1,0 +1,85 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-create-document
+      author: carsupervision
+      comment: Justificatifs des entretiens (fonctionnalité 002, US5).
+      changes:
+        - createTable:
+            tableName: document
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_document
+              - column:
+                  name: record_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    # Sans cascade : le service supprime lignes et fichiers (research R2).
+                    foreignKeyName: fk_document_record
+                    references: maintenance_record(id)
+              - column:
+                  name: vehicle_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_document_vehicle
+                    references: vehicle(id)
+              - column:
+                  name: storage_key
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_document_storage_key
+              - column:
+                  name: file_name
+                  type: varchar(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content_type
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: size_bytes
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: author_id
+                  type: uuid
+              - column:
+                  name: author_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_document_author
+            baseTableName: document
+            baseColumnNames: author_id
+            referencedTableName: member
+            referencedColumnNames: id
+            # Un membre retiré est supprimé : ses justificatifs restent, avec author_name (research R6).
+            onDelete: SET NULL
+        - sql:
+            sql: >
+              ALTER TABLE document
+                ADD CONSTRAINT ck_document_content_type
+                  CHECK (content_type IN ('application/pdf', 'image/jpeg', 'image/png', 'image/webp')),
+                ADD CONSTRAINT ck_document_size CHECK (size_bytes BETWEEN 1 AND 10485760)
+        - createIndex:
+            tableName: document
+            indexName: ix_document_record
+            columns:
+              - column:
+                  name: record_id

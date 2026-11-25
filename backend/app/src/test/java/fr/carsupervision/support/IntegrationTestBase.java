@@ -57,7 +57,7 @@ public abstract class IntegrationTestBase {
     @BeforeEach
     void resetDatabase() {
         clock.reset();
-        jdbc.execute("TRUNCATE deadline_suggestion_dismissal, deadline, maintenance_rule, maintenance_record_type, maintenance_record, mileage_reading, vehicle_access, vehicle,"
+        jdbc.execute("TRUNCATE document, deadline_suggestion_dismissal, deadline, maintenance_rule, maintenance_record_type, maintenance_record, mileage_reading, vehicle_access, vehicle,"
                 + " member, spring_session CASCADE");
         resetCatalogue();
         initialAdmin.run();

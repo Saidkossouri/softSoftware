@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ApiError } from '@/api/client'
 import { useDeleteMaintenanceRecord, useMaintenanceRecord } from '@/api/maintenance'
+import { DocumentList } from '@/components/DocumentList'
 import { errorMessage } from '@/components/FormErrors'
 import { IconTile } from '@/components/ListCard'
 import { BackLink, SectionLabel } from '@/components/PageHeader'
@@ -118,6 +119,8 @@ export function MaintenanceRecordPage() {
               </dl>
             </CardContent>
           </Card>
+
+          <DocumentList recordId={record.data.id} />
 
           <ConfirmDialog
             open={confirming}

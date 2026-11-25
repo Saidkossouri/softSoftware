@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /** Traduit toutes les erreurs de l'API en Problem Details avec messages en français (FR-025). */
@@ -82,6 +84,19 @@ public class ApiExceptionHandler {
     ResponseEntity<Problem> handleMethod(HttpRequestMethodNotSupportedException ex) {
         return Problems.response(HttpStatus.METHOD_NOT_ALLOWED, ErrorCode.VALIDATION_ERROR,
                 "Cette opération n'est pas disponible.", List.of());
+    }
+
+    /** Justificatif de plus de 10 Mo (research R14) : refusé avant d'atteindre le contrôleur. */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<Problem> handleTooLarge(MaxUploadSizeExceededException ex) {
+        return Problems.response(HttpStatus.PAYLOAD_TOO_LARGE, ErrorCode.DOCUMENT_TOO_LARGE,
+                "Le fichier dépasse 10 Mo.", List.of());
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    ResponseEntity<Problem> handleMissingPart(MissingServletRequestPartException ex) {
+        return Problems.response(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_ERROR,
+                "Choisissez un fichier à joindre.", List.of());
     }
 
     @ExceptionHandler(Exception.class)

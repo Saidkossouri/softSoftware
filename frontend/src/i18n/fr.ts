@@ -1,4 +1,4 @@
-import type { EnergyType, Role } from '@/api/client'
+import type { DueStatus, EnergyType, MaintenanceTypeCategory, Role } from '@/api/client'
 
 /** Libellés de l'interface, en français uniquement (spec : hypothèses). */
 export const fr = {
@@ -92,6 +92,7 @@ export const fr = {
     archivedBadge: 'Archivé',
     makeModel: (make: string, model: string) => `${make} ${model}`,
     mileage: (km: number) => `${km.toLocaleString('fr-FR')} km`,
+    currentMileage: (km: string, date: string) => `${km} · relevé le ${date}`,
     back: 'Retour au parc',
     createTitle: 'Nouveau véhicule',
     created: (nickname: string) => `${nickname} a été ajouté au parc.`,
@@ -134,6 +135,7 @@ export const fr = {
     registration: 'Immatriculation',
     year: 'Année',
     mileage: 'Kilométrage de départ',
+    currentMileage: 'Kilométrage actuel',
     energy: 'Énergie',
     vin: 'VIN',
     notSet: 'Non renseigné',
@@ -156,6 +158,35 @@ export const fr = {
     saving: 'Enregistrement…',
     saved: 'Accès aux véhicules enregistrés.',
   },
+  mileage: {
+    record: 'Relever le kilométrage',
+    recordFor: (nickname: string) => `Relever le kilométrage de ${nickname}`,
+    dialogTitle: 'Relever le kilométrage',
+    dialogDescription: (nickname: string, current: string) => `${nickname} · dernier kilométrage connu : ${current}`,
+    km: 'Kilométrage au compteur (km)',
+    date: 'Date du relevé',
+    note: 'Remarque (facultatif)',
+    notePlaceholder: 'Plein, départ en vacances…',
+    save: 'Enregistrer le relevé',
+    saving: 'Enregistrement…',
+    saved: (km: string) => `Kilométrage de ${km} enregistré.`,
+    cancel: 'Annuler',
+    close: 'Fermer',
+    jumpTitle: 'Écart inhabituel',
+    jumpConfirm: 'Confirmer ce kilométrage',
+    jumpFix: 'Corriger',
+    invalidKm: 'Saisissez un kilométrage entier, sans espace ni décimale.',
+    futureDate: 'La date du relevé ne peut pas être dans le futur.',
+  },
+  maintenanceCategories: {
+    MAINTENANCE: 'Entretien',
+    ADMINISTRATIVE: 'Administratif',
+  } satisfies Record<MaintenanceTypeCategory, string>,
+  dueStatus: {
+    OVERDUE: 'En retard',
+    SOON: 'Bientôt',
+    OK: 'À jour',
+  } satisfies Record<DueStatus, string>,
   validation: {
     required: 'Ce champ est obligatoire.',
     email: 'Saisissez une adresse email valide.',

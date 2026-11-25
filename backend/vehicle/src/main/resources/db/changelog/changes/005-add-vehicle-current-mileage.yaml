@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-add-vehicle-current-mileage
+      author: carsupervision
+      comment: Kilométrage actuel stocké sur le véhicule (research R3), initialisé au kilométrage de départ.
+      changes:
+        - addColumn:
+            tableName: vehicle
+            columns:
+              - column:
+                  name: current_mileage_km
+                  type: integer
+              - column:
+                  name: current_mileage_date
+                  type: date
+        - sql:
+            sql: >
+              UPDATE vehicle
+              SET current_mileage_km = initial_mileage_km,
+                  current_mileage_date = (created_at AT TIME ZONE 'Africa/Casablanca')::date
+        - addNotNullConstraint:
+            tableName: vehicle
+            columnName: current_mileage_km
+            columnDataType: integer
+        - addNotNullConstraint:
+            tableName: vehicle
+            columnName: current_mileage_date
+            columnDataType: date
+        - sql:
+            sql: ALTER TABLE vehicle ADD CONSTRAINT ck_vehicle_current_mileage CHECK (current_mileage_km >= 0)

@@ -56,6 +56,7 @@ describe('véhicules accessibles d’un membre', () => {
     model: 'Clio',
     registration: `${id.slice(0, 2)}-123-CD`,
     initialMileageKm: 0,
+    currentMileage: { mileageKm: 0, date: '2026-11-20' },
     status,
     createdAt: '2026-11-20T08:00:00Z',
     updatedAt: '2026-11-20T08:00:00Z',

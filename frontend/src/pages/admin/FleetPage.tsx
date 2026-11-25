@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { SegmentedTabs } from '@/components/ui/segmented-tabs'
 import { useToast } from '@/components/ui/toast'
 import { fr } from '@/i18n/fr'
+import { formatDate, formatKm } from '@/lib/format'
 
 const TABS = [
   { value: 'ACTIVE', label: fr.fleet.activeTab },
@@ -100,7 +101,7 @@ export function FleetPage() {
                   <Plate registration={vehicle.registration} />
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
                     <Gauge aria-hidden className="size-4" />
-                    {fr.fleet.mileage(vehicle.initialMileageKm)}
+                    {fr.fleet.currentMileage(formatKm(vehicle.currentMileage.mileageKm), formatDate(vehicle.currentMileage.date))}
                   </span>
                   {vehicle.energyType && (
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">

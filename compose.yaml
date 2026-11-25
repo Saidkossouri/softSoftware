@@ -42,6 +42,10 @@ services:
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-carsupervision}
       # Profil dev : cookie de session sans l'attribut Secure, car l'accès local se fait en http.
       SPRING_PROFILES_ACTIVE: dev
+      # Justificatifs (factures, photos) : à sauvegarder avec la base.
+      DOCUMENTS_DIR: /var/lib/carsupervision/documents
+    volumes:
+      - documents-data:/var/lib/carsupervision/documents
     ports:
       - "8080:8080"
 
@@ -59,3 +63,4 @@ services:
 
 volumes:
   postgres-data:
+  documents-data:

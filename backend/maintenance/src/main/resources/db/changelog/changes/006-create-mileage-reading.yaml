@@ -1,0 +1,72 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-mileage-reading
+      author: carsupervision
+      comment: Relevés kilométriques (fonctionnalité 002, US1).
+      changes:
+        - createTable:
+            tableName: mileage_reading
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_mileage_reading
+              - column:
+                  name: vehicle_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_mileage_reading_vehicle
+                    references: vehicle(id)
+                    deleteCascade: true
+              - column:
+                  name: reading_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mileage_km
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: varchar(200)
+              - column:
+                  name: author_id
+                  type: uuid
+              - column:
+                  name: author_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_mileage_reading_author
+            baseTableName: mileage_reading
+            baseColumnNames: author_id
+            referencedTableName: member
+            referencedColumnNames: id
+            # Un membre retiré est supprimé : ses relevés restent, avec author_name (research R6).
+            onDelete: SET NULL
+        - sql:
+            sql: ALTER TABLE mileage_reading ADD CONSTRAINT ck_mileage_reading_km CHECK (mileage_km >= 0)
+        - createIndex:
+            tableName: mileage_reading
+            indexName: ix_mileage_reading_vehicle_date
+            columns:
+              - column:
+                  name: vehicle_id
+              - column:
+                  name: reading_date

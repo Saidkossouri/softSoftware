@@ -2,6 +2,8 @@
 server {
     listen 80;
     server_name _;
+    # Justificatifs de 10 Mo au plus (FR-030), plus l'enveloppe multipart.
+    client_max_body_size 11m;
     root /usr/share/nginx/html;
 
     # Résolution DNS au moment de la requête (DNS interne de Docker) : le frontend démarre même

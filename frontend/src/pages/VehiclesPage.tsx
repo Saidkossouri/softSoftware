@@ -1,10 +1,12 @@
 import { Car, CarFront, ChevronRight, Gauge, Plus, Sparkles, Users, type LucideIcon } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import type { Vehicle } from '@/api/client'
 import { useVehicles } from '@/api/vehicles'
 import { useAuth } from '@/auth/AuthContext'
 import { errorMessage } from '@/components/FormErrors'
 import { IconTile, ListSkeleton } from '@/components/ListCard'
+import { MileageReadingDialog } from '@/components/MileageReadingDialog'
 import { SectionLabel } from '@/components/PageHeader'
 import { Plate } from '@/components/Plate'
 import { Alert } from '@/components/ui/alert'
@@ -12,6 +14,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { fr } from '@/i18n/fr'
+import { formatDate, formatKm } from '@/lib/format'
 
 /**
  * Accueil (US4, FR-021) : « Mes véhicules » pour un USER (ses véhicules actifs attribués,
@@ -93,25 +96,43 @@ export function VehiclesPage() {
 const tileClass =
   'group flex h-full items-center gap-4 rounded-2xl border border-border/60 bg-card p-4 shadow-card transition-transform duration-150 outline-none hover:-translate-y-0.5 focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none motion-reduce:hover:translate-y-0'
 
+/** Carte d'un véhicule : lien vers sa fiche et relevé du kilométrage en un geste (FR-017). */
 function VehicleTile({ vehicle }: { vehicle: Vehicle }) {
+  const [recording, setRecording] = useState(false)
   return (
-    <Link to={`/vehicules/${vehicle.id}`} className={tileClass} aria-label={fr.home.open(vehicle.nickname)}>
-      <IconTile>
-        <CarFront />
-      </IconTile>
-      <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <span className="truncate font-semibold">{vehicle.nickname}</span>
-        <span className="truncate text-sm text-muted-foreground">{fr.fleet.makeModel(vehicle.make, vehicle.model)}</span>
-        <span className="flex flex-wrap items-center gap-2">
-          <Plate registration={vehicle.registration} />
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
-            <Gauge aria-hidden className="size-4" />
-            {fr.fleet.mileage(vehicle.initialMileageKm)}
+    <div className="flex h-full flex-col gap-3 rounded-2xl border border-border/60 bg-card p-4 shadow-card">
+      <Link
+        to={`/vehicules/${vehicle.id}`}
+        className="group flex items-center gap-4 rounded-xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        aria-label={fr.home.open(vehicle.nickname)}
+      >
+        <IconTile>
+          <CarFront />
+        </IconTile>
+        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <span className="truncate font-semibold">{vehicle.nickname}</span>
+          <span className="truncate text-sm text-muted-foreground">{fr.fleet.makeModel(vehicle.make, vehicle.model)}</span>
+          <span className="flex flex-wrap items-center gap-2">
+            <Plate registration={vehicle.registration} />
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
+              <Gauge aria-hidden className="size-4" />
+              {fr.fleet.currentMileage(formatKm(vehicle.currentMileage.mileageKm), formatDate(vehicle.currentMileage.date))}
+            </span>
           </span>
         </span>
-      </span>
-      <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-    </Link>
+        <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+      </Link>
+      <Button
+        variant="outline"
+        className="mt-auto w-full"
+        aria-label={fr.mileage.recordFor(vehicle.nickname)}
+        onClick={() => setRecording(true)}
+      >
+        <Gauge aria-hidden />
+        {fr.mileage.record}
+      </Button>
+      {recording && <MileageReadingDialog vehicle={vehicle} onClose={() => setRecording(false)} />}
+    </div>
   )
 }
 

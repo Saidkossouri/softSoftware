@@ -14,7 +14,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 /**
  * Base des tests d'intégration : vrai PostgreSQL (Testcontainers), Liquibase exécuté, MockMvc
  * avec la chaîne de sécurité complète. Chaque test part d'une base contenant uniquement l'ADMIN
- * initial ({@code said@example.com}).
+ * initial ({@code said@example.com}). L'horloge partagée est fixée au 15 juin 2026 ({@link MutableClock}).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -41,11 +41,18 @@ public abstract class IntegrationTestBase {
     protected TestMembers members;
 
     @Autowired
+    protected TestVehicles vehicles;
+
+    @Autowired
+    protected MutableClock clock;
+
+    @Autowired
     private InitialAdminInitializerAccess initialAdmin;
 
     @BeforeEach
     void resetDatabase() {
-        jdbc.execute("TRUNCATE vehicle_access, vehicle, member, spring_session CASCADE");
+        clock.reset();
+        jdbc.execute("TRUNCATE mileage_reading, vehicle_access, vehicle, member, spring_session CASCADE");
         initialAdmin.run();
     }
 }

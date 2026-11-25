@@ -67,6 +67,8 @@ class VehiclesAdminIT extends IntegrationTestBase {
                 .andExpect(jsonPath("$.vin").value("VF3MCYHZRKS123456"))
                 .andExpect(jsonPath("$.energyType").value("DIESEL"))
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.currentMileage.mileageKm").value(45000))
+                .andExpect(jsonPath("$.currentMileage.date").value("2026-06-15"))
                 .andExpect(jsonPath("$.createdAt").isNotEmpty())
                 .andExpect(jsonPath("$.updatedAt").isNotEmpty())
                 .andExpect(conformsToContract());
@@ -99,6 +101,20 @@ class VehiclesAdminIT extends IntegrationTestBase {
                 .andExpect(jsonPath("$.vin").doesNotExist())
                 .andExpect(jsonPath("$.energyType").doesNotExist())
                 .andExpect(jsonPath("$.firstRegistrationYear").doesNotExist())
+                .andExpect(conformsToContract());
+    }
+
+    @Test
+    void currentMileageFollowsInitialMileageWhileVehicleHasNoEntry() throws Exception {
+        String id = createVehicle("Citadine", "AA-111-AA");
+
+        mockMvc.perform(asAdmin(json(put("/api/vehicles/" + id), """
+                        {"nickname":"Citadine","make":"Peugeot","model":"308","registration":"AA-111-AA",
+                         "initialMileageKm":15000}
+                        """)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.initialMileageKm").value(15000))
+                .andExpect(jsonPath("$.currentMileage.mileageKm").value(15000))
                 .andExpect(conformsToContract());
     }
 

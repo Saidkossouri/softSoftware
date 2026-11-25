@@ -195,6 +195,20 @@ seule.
 
 ---
 
+## Phase 5b: Refonte de l'interface (design)
+
+**Goal**: rendre l'interface plus attrayante avant l'histoire 4, selon la piste « Lumineux » choisie par Said le 25/11/2026 parmi trois maquettes ; les écrans de l'histoire 4 suivent directement la nouvelle charte.
+
+- [X] T091 Mettre à jour la skill `.claude/skills/charte-interface/SKILL.md` en v2 (piste « Lumineux ») : jetons, typographie, mise en page, composants, toasts, états vides, dialogues
+- [X] T092 Thème dans `frontend/src/index.css` : nouveaux jetons clair et sombre (dont `accent`, `success`, `warning`, `*-soft`, ombres), polices Inter et Space Grotesk embarquées (`@fontsource-variable`), icônes `lucide-react`
+- [X] T093 Composants de base dans `frontend/src/components/ui/` (bouton, carte, badge à variantes de statut, alerte, champs, `ConfirmDialog`, `Toaster`, `EmptyState`, `SegmentedTabs`, `Skeleton`) et métier dans `frontend/src/components/` (`PageHeader`, `BackLink`, `ListCard`, `Plate`, `Avatar`, `BrandMark`, `Illustration`)
+- [X] T094 `AppLayout` : navigation en barre fixe en bas sur mobile, dans l'en-tête sur desktop ; application de la charte à tous les écrans (connexion, accès refusé, accueil, parc, formulaire véhicule, membres, édition membre)
+- [X] T095 Test de composant : dialogue de confirmation d'archivage annulable sans appel à l'API (`frontend/tests/VehicleFormPage.test.tsx`)
+
+**Checkpoint**: tous les écrans suivent la charte v2, à 360 px comme sur desktop, en thème clair et sombre.
+
+---
+
 ## Phase 6: User Story 4 - Donner à chaque membre accès à ses véhicules (Priority: P4)
 
 **Goal**: l'ADMIN attribue des véhicules à chaque USER ; un USER ne voit et n'obtient que ses véhicules actifs attribués, sans fuite d'information.

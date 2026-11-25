@@ -5,6 +5,7 @@ import { AuthProvider } from '@/auth/AuthContext'
 import { RequireAdmin } from '@/auth/RequireAdmin'
 import { RequireAuth } from '@/auth/RequireAuth'
 import { AppLayout } from '@/components/AppLayout'
+import { Toaster } from '@/components/ui/toast'
 import { HomePage } from '@/pages/HomePage'
 import { MemberEditPage } from '@/pages/admin/MemberEditPage'
 import { MembersPage } from '@/pages/admin/MembersPage'
@@ -16,7 +17,8 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
+        <Toaster>
+          <BrowserRouter>
           <RequireAuth>
             <Routes>
               <Route element={<AppLayout />}>
@@ -32,7 +34,8 @@ export function App() {
               </Route>
             </Routes>
           </RequireAuth>
-        </BrowserRouter>
+          </BrowserRouter>
+        </Toaster>
       </AuthProvider>
     </QueryClientProvider>
   )

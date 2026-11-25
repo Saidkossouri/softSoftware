@@ -36,4 +36,13 @@ public interface MaintenanceRecordRepository extends JpaRepository<MaintenanceRe
             where r.vehicleId = :vehicleId and r.recordDate between :from and :to
             """)
     long sumCostBetween(UUID vehicleId, LocalDate from, LocalDate to);
+
+    /** Réalisations d'un type sur un véhicule, la plus récente d'abord (date, puis kilométrage). */
+    @Query("""
+            select new fr.carsupervision.maintenance.MileagePoint(r.id, r.recordDate, r.mileageKm)
+            from MaintenanceRecord r join r.types t
+            where r.vehicleId = :vehicleId and t.id = :typeId
+            order by r.recordDate desc, r.mileageKm desc
+            """)
+    List<MileagePoint> findOccurrences(UUID vehicleId, UUID typeId, org.springframework.data.domain.Limit limit);
 }

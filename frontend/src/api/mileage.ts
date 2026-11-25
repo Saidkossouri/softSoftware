@@ -1,14 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, unwrap, type MileageReadingInput } from './client'
+import { refreshSchedule } from './schedule'
 
-/** Un relevé change le kilométrage actuel (véhicules) et l'historique du véhicule. */
+/** Un relevé change le kilométrage actuel, l'historique et les échéances du véhicule. */
 function useInvalidateMileage() {
   const queryClient = useQueryClient()
-  return () =>
-    Promise.all([
+  return () => {
+    refreshSchedule(queryClient)
+    return Promise.all([
       queryClient.invalidateQueries({ queryKey: ['vehicles'] }),
       queryClient.invalidateQueries({ queryKey: ['history'] }),
     ])
+  }
 }
 
 export function useCreateMileageReading(vehicleId: string) {

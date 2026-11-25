@@ -1,5 +1,6 @@
 import { Car, House, LogOut, Users, type LucideIcon } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
+import { useReminders } from '@/api/schedule'
 import { useAuth } from '@/auth/AuthContext'
 import { BrandMark } from '@/components/BrandMark'
 import { Avatar } from '@/components/ListCard'
@@ -15,6 +16,10 @@ import { cn } from '@/lib/utils'
 export function AppLayout() {
   const { state, logout } = useAuth()
   const member = state.status === 'authenticated' ? state.member : null
+  const reminders = useReminders(member !== null)
+  const reminderCount = reminders.data
+    ? reminders.data.dueItems.length + reminders.data.mileageReadings.length
+    : 0
 
   return (
     <div className="min-h-svh">
@@ -26,7 +31,7 @@ export function AppLayout() {
               aria-label={fr.nav.label}
               className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-border/60 bg-card px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:static sm:mr-auto sm:ml-6 sm:justify-start sm:gap-1 sm:border-0 sm:bg-transparent sm:p-0"
             >
-              <NavItem to="/" end icon={House}>
+              <NavItem to="/" end icon={House} badge={reminderCount}>
                 {fr.nav.home}
               </NavItem>
               {member.role === 'ADMIN' && (
@@ -67,7 +72,19 @@ export function AppLayout() {
   )
 }
 
-function NavItem({ to, end, icon: Icon, children }: { to: string; end?: boolean; icon: LucideIcon; children: string }) {
+function NavItem({
+  to,
+  end,
+  icon: Icon,
+  badge = 0,
+  children,
+}: {
+  to: string
+  end?: boolean
+  icon: LucideIcon
+  badge?: number
+  children: string
+}) {
   return (
     <NavLink
       to={to}
@@ -81,8 +98,29 @@ function NavItem({ to, end, icon: Icon, children }: { to: string; end?: boolean;
         )
       }
     >
-      <Icon aria-hidden className="size-6 sm:size-4" />
+      <span className="relative">
+        <Icon aria-hidden className="size-6 sm:size-4" />
+        {badge > 0 && (
+          <span
+            aria-hidden
+            className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[0.625rem] leading-none font-bold text-primary-foreground tabular-nums sm:hidden"
+          >
+            {badge}
+          </span>
+        )}
+      </span>
       {children}
+      {badge > 0 && (
+        <>
+          <span
+            aria-hidden
+            className="hidden h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs leading-none font-bold text-primary-foreground tabular-nums sm:inline-flex"
+          >
+            {badge}
+          </span>
+          <span className="sr-only">{`(${fr.reminders.navCount(badge)})`}</span>
+        </>
+      )}
     </NavLink>
   )
 }

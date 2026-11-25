@@ -23,6 +23,12 @@ export type MaintenanceRecord = components['schemas']['MaintenanceRecord']
 export type MaintenanceRecordInput = components['schemas']['MaintenanceRecordInput']
 export type HistoryEntry = components['schemas']['HistoryEntry']
 export type VehicleHistory = components['schemas']['VehicleHistory']
+export type DueItem = components['schemas']['DueItem']
+export type Reminders = components['schemas']['Reminders']
+export type MaintenanceRuleInput = components['schemas']['MaintenanceRuleInput']
+export type MaintenanceRuleUpdate = components['schemas']['MaintenanceRuleUpdate']
+export type DeadlineInput = components['schemas']['DeadlineInput']
+export type DeadlineSuggestion = components['schemas']['DeadlineSuggestion']
 export type DueStatus = components['schemas']['DueStatus']
 
 /** Erreur de l'API au format Problem Details, avec le code stable du contrat. */

@@ -9,6 +9,7 @@ import { Toaster } from '@/components/ui/toast'
 import { MaintenanceRecordFormPage } from '@/pages/MaintenanceRecordFormPage'
 import { MaintenanceRecordPage } from '@/pages/MaintenanceRecordPage'
 import { VehicleDetailPage } from '@/pages/VehicleDetailPage'
+import { VehiclePlanPage } from '@/pages/VehiclePlanPage'
 import { VehiclesPage } from '@/pages/VehiclesPage'
 import { MemberEditPage } from '@/pages/admin/MemberEditPage'
 import { MembersPage } from '@/pages/admin/MembersPage'
@@ -28,6 +29,7 @@ export function App() {
                 <Route index element={<VehiclesPage />} />
                 <Route path="vehicules/:vehicleId" element={<VehicleDetailPage />} />
                 <Route path="vehicules/:vehicleId/entretiens/nouveau" element={<MaintenanceRecordFormPage />} />
+                <Route path="vehicules/:vehicleId/plan" element={<VehiclePlanPage />} />
                 <Route path="entretiens/:recordId" element={<MaintenanceRecordPage />} />
                 <Route path="entretiens/:recordId/modifier" element={<MaintenanceRecordFormPage />} />
                 <Route path="admin" element={<RequireAdmin />}>

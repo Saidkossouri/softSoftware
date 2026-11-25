@@ -1,4 +1,4 @@
-import { Car, CarFront, ChevronRight, Gauge, Plus, Sparkles, Users, type LucideIcon } from 'lucide-react'
+import { Car, CarFront, ChevronRight, Gauge, Plus, Users, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import type { Vehicle } from '@/api/client'
@@ -9,6 +9,7 @@ import { IconTile, ListSkeleton } from '@/components/ListCard'
 import { MileageReadingDialog } from '@/components/MileageReadingDialog'
 import { SectionLabel } from '@/components/PageHeader'
 import { Plate } from '@/components/Plate'
+import { ReminderList } from '@/components/ReminderList'
 import { Alert } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -17,7 +18,7 @@ import { fr } from '@/i18n/fr'
 import { formatDate, formatKm } from '@/lib/format'
 
 /**
- * Accueil (US4, FR-021) : « Mes véhicules » pour un USER (ses véhicules actifs attribués,
+ * Accueil (FR-021, FR-028) : rappels à faire, puis « Mes véhicules » pour un USER (ses véhicules actifs attribués,
  * filtrés par le serveur), véhicules en service pour un ADMIN, plus ses raccourcis.
  */
 export function VehiclesPage() {
@@ -33,11 +34,9 @@ export function VehiclesPage() {
         <p className="text-sm font-medium opacity-85">{fr.home.today(new Date())}</p>
         <h1 className="text-2xl font-bold sm:text-3xl">{firstName ? fr.home.greeting(firstName) : fr.home.title}</h1>
         <p className="max-w-prose text-sm opacity-90">{fr.home.body}</p>
-        <p className="mt-1 inline-flex items-center gap-2 self-start rounded-full bg-primary-foreground/15 px-3 py-1.5 text-xs font-semibold">
-          <Sparkles aria-hidden className="size-4" />
-          {fr.home.comingSoon}
-        </p>
       </section>
+
+      {vehicles.isSuccess && vehicles.data.length > 0 && <ReminderList vehicles={vehicles.data} />}
 
       <section className="flex flex-col gap-3">
         <SectionLabel>{isAdmin ? fr.home.fleetVehicles : fr.home.myVehicles}</SectionLabel>

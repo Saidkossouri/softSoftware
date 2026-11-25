@@ -9,11 +9,12 @@ et implémentation Spec Kit doit respecter.
 ### I. API Contract-First (NON NÉGOCIABLE)
 
 - Toute fonctionnalité qui expose ou consomme une API DOIT commencer par la définition du contrat
-  dans `src/main/resources/openapi/openapi.yaml` (OpenAPI 3.x, format YAML) : endpoints,
+  dans `backend/api-contract/src/main/resources/openapi/openapi.yaml` (module `api-contract`,
+  OpenAPI 3.x, format YAML) : endpoints,
   paramètres, schémas de DTOs et codes d'erreur.
 - Les interfaces serveur (`*Api.java`) et les DTOs DOIVENT être générés automatiquement lors du
   build Gradle par la tâche `openApiGenerate` (plugin `org.openapi.generator`), vers
-  `build/generated`.
+  `backend/api-contract/build/generated/openapi`.
 - Le code généré NE DOIT JAMAIS être édité à la main ni commité dans `src/`.
 - Les contrôleurs Spring DOIVENT uniquement implémenter ces interfaces générées ; aucun endpoint
   REST ne peut être déclaré hors du contrat.
@@ -112,9 +113,11 @@ faire évoluer par une seule personne.
 - **Backend** : Java 21 + Spring Boot 3 (API REST), Spring Data JPA / Hibernate, Liquibase pour
   les migrations de schéma, Jackson. Toute évolution du schéma passe par un changeset Liquibase.
 - **Build** : Gradle avec Kotlin DSL (`build.gradle.kts`).
-- **Contrat d'API** : OpenAPI 3.x en YAML (`src/main/resources/openapi/openapi.yaml`), génération
-  des interfaces `*Api.java` et des DTOs au build (`org.openapi.generator` vers
-  `build/generated`), documentation interactive Swagger UI / Springdoc.
+- **Contrat d'API** : OpenAPI 3.x en YAML
+  (`backend/api-contract/src/main/resources/openapi/openapi.yaml`), génération des interfaces
+  `*Api.java` et des DTOs au build (`org.openapi.generator` vers
+  `backend/api-contract/build/generated/openapi`), documentation interactive Swagger UI /
+  Springdoc.
 - **Frontend** : ReactJS en TypeScript, UI moderne, épurée et rapide (par exemple Tailwind CSS +
   shadcn/ui), consommant les types et clients générés depuis `openapi.yaml`.
 - **Base de données** : PostgreSQL.
@@ -149,4 +152,4 @@ faire évoluer par une seule personne.
   - MINOR : ajout d'un principe ou d'une section, ou extension notable des règles ;
   - PATCH : clarifications, reformulations, corrections sans effet sur le fond.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19
+**Version**: 1.0.1 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-25

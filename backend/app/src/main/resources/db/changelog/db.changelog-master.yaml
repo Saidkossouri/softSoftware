@@ -17,3 +17,9 @@ databaseChangeLog:
   - include:
       file: changes/006-create-mileage-reading.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/007-create-maintenance-type.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/008-create-maintenance-record.yaml
+      relativeToChangelogFile: true

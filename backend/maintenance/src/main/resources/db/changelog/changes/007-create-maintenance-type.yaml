@@ -1,0 +1,102 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-create-maintenance-type
+      author: carsupervision
+      comment: Catalogue des types d'entretien géré par l'ADMIN (research R9), pré-rempli avec des valeurs marocaines.
+      changes:
+        - createTable:
+            tableName: maintenance_type
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_maintenance_type
+              - column:
+                  name: name
+                  type: varchar(60)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name_key
+                  type: varchar(60)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_maintenance_type_name_key
+              - column:
+                  name: category
+                  type: varchar(15)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: default_interval_km
+                  type: integer
+              - column:
+                  name: default_interval_months
+                  type: smallint
+              - column:
+                  name: requires_description
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: suggest_from_age_years
+                  type: smallint
+              - column:
+                  name: display_order
+                  type: smallint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >
+              ALTER TABLE maintenance_type
+                ADD CONSTRAINT ck_maintenance_type_category CHECK (category IN ('MAINTENANCE', 'ADMINISTRATIVE')),
+                ADD CONSTRAINT ck_maintenance_type_interval_km CHECK (default_interval_km IS NULL
+                  OR (category = 'MAINTENANCE' AND default_interval_km BETWEEN 1 AND 1000000)),
+                ADD CONSTRAINT ck_maintenance_type_interval_months CHECK (default_interval_months IS NULL
+                  OR default_interval_months BETWEEN 1 AND 240),
+                ADD CONSTRAINT ck_maintenance_type_requires_description CHECK (NOT requires_description
+                  OR category = 'MAINTENANCE'),
+                ADD CONSTRAINT ck_maintenance_type_suggest_age CHECK (suggest_from_age_years IS NULL
+                  OR (category = 'ADMINISTRATIVE' AND suggest_from_age_years BETWEEN 0 AND 50))
+        - sql:
+            comment: Types pré-remplis (identifiants fixes, data-model.md).
+            sql: >
+              INSERT INTO maintenance_type (id, name, name_key, category, default_interval_km,
+                default_interval_months, requires_description, suggest_from_age_years, display_order, active,
+                created_at, updated_at) VALUES
+              ('10000000-0000-4000-8000-000000000001', 'Vidange', 'vidange', 'MAINTENANCE', 10000, 12, false, NULL, 1, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000002', 'Filtre à huile', 'filtre à huile', 'MAINTENANCE', 10000, 12, false, NULL, 2, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000003', 'Filtre à air', 'filtre à air', 'MAINTENANCE', 20000, 24, false, NULL, 3, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000004', 'Filtre d''habitacle', 'filtre d''habitacle', 'MAINTENANCE', 15000, 12, false, NULL, 4, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000005', 'Filtre à carburant', 'filtre à carburant', 'MAINTENANCE', 40000, 24, false, NULL, 5, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000006', 'Révision', 'révision', 'MAINTENANCE', 20000, 12, false, NULL, 6, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000007', 'Pneus', 'pneus', 'MAINTENANCE', 40000, NULL, false, NULL, 7, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000008', 'Freins', 'freins', 'MAINTENANCE', 30000, NULL, false, NULL, 8, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000009', 'Distribution', 'distribution', 'MAINTENANCE', 80000, 60, false, NULL, 9, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000010', 'Batterie', 'batterie', 'MAINTENANCE', NULL, 48, false, NULL, 10, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000011', 'Climatisation', 'climatisation', 'MAINTENANCE', NULL, 24, false, NULL, 11, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000012', 'Réparation', 'réparation', 'MAINTENANCE', NULL, NULL, false, NULL, 12, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('10000000-0000-4000-8000-000000000013', 'Autre', 'autre', 'MAINTENANCE', NULL, NULL, true, NULL, 13, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('20000000-0000-4000-8000-000000000001', 'Assurance', 'assurance', 'ADMINISTRATIVE', NULL, 12, false, 0, 1, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('20000000-0000-4000-8000-000000000002', 'Vignette', 'vignette', 'ADMINISTRATIVE', NULL, 12, false, 0, 2, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00'),
+              ('20000000-0000-4000-8000-000000000003', 'Visite technique', 'visite technique', 'ADMINISTRATIVE', NULL, 12, false, 5, 3, true, TIMESTAMPTZ '2026-01-01 00:00:00+00', TIMESTAMPTZ '2026-01-01 00:00:00+00')

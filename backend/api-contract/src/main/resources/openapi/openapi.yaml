@@ -1656,7 +1656,7 @@ components:
 
     MaintenanceRecordInput:
       type: object
-      required: [recordDate, mileageKm, operations]
+      required: [recordDate, mileageKm, typeIds]
       properties:
         recordDate:
           type: string
@@ -1668,8 +1668,8 @@ components:
         typeIds:
           type: array
           minItems: 1
-          uniqueItems: true
-          description: Types actifs de catégorie `MAINTENANCE` (sinon 400).
+          maxItems: 20
+          description: Types actifs de catégorie `MAINTENANCE`, sans doublon (sinon 400).
           items:
             type: string
             format: uuid

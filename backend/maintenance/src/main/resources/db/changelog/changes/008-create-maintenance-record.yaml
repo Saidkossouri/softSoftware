@@ -1,0 +1,112 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-create-maintenance-record
+      author: carsupervision
+      comment: Entretiens réalisés et leurs types (fonctionnalité 002, US2).
+      changes:
+        - createTable:
+            tableName: maintenance_record
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_maintenance_record
+              - column:
+                  name: vehicle_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_maintenance_record_vehicle
+                    references: vehicle(id)
+                    deleteCascade: true
+              - column:
+                  name: record_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mileage_km
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(200)
+              - column:
+                  name: cost_cents
+                  type: integer
+              - column:
+                  name: garage
+                  type: varchar(100)
+              - column:
+                  name: notes
+                  type: varchar(2000)
+              - column:
+                  name: author_id
+                  type: uuid
+              - column:
+                  name: author_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_maintenance_record_author
+            baseTableName: maintenance_record
+            baseColumnNames: author_id
+            referencedTableName: member
+            referencedColumnNames: id
+            # Un membre retiré est supprimé : ses entretiens restent, avec author_name (research R6).
+            onDelete: SET NULL
+        - sql:
+            sql: >
+              ALTER TABLE maintenance_record
+                ADD CONSTRAINT ck_maintenance_record_km CHECK (mileage_km >= 0),
+                ADD CONSTRAINT ck_maintenance_record_cost CHECK (cost_cents IS NULL OR cost_cents >= 0)
+        - createIndex:
+            tableName: maintenance_record
+            indexName: ix_maintenance_record_vehicle_date
+            columns:
+              - column:
+                  name: vehicle_id
+              - column:
+                  name: record_date
+        - createTable:
+            tableName: maintenance_record_type
+            columns:
+              - column:
+                  name: record_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_maintenance_record_type_record
+                    references: maintenance_record(id)
+                    deleteCascade: true
+              - column:
+                  name: type_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_maintenance_record_type_type
+                    references: maintenance_type(id)
+        - addPrimaryKey:
+            tableName: maintenance_record_type
+            columnNames: record_id, type_id
+            constraintName: pk_maintenance_record_type
+        - createIndex:
+            tableName: maintenance_record_type
+            indexName: ix_maintenance_record_type_type
+            columns:
+              - column:
+                  name: type_id
